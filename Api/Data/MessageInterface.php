@@ -12,6 +12,9 @@ interface MessageInterface
     public const string STATUS = "status";
     public const string CREATED_AT = "created_at";
 
+    public const int STATUS_UNREAD = 0;
+    public const int STATUS_READ = 1;
+
     /**
      * @return int
      */

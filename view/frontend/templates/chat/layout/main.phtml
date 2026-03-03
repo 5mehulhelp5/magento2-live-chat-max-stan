@@ -22,6 +22,7 @@ $heroicons = $viewModels->require(HeroiconsOutline::class);
                 <span x-text="phrase.text"></span>
             </h2>
         </div>
+        <?= /** @noEscape */ $block->getChildHtml('permissions-bar') ?>
         <div class="livechat-body">
             <?php // Please don't delete ul tag to keep user always scolled bottom?>
             <ul aria-label="<?= $escaper->escapeHtmlAttr(__('Conversations')) ?>">

@@ -1,0 +1,34 @@
+<?php
+
+declare(strict_types=1);
+
+use Hyva\Theme\Model\ViewModelRegistry;
+use Hyva\Theme\ViewModel\Customer;
+use Magento\Framework\Escaper;
+use Magento\Framework\View\Element\Template;
+
+/** @var Template $block */
+/** @var ViewModelRegistry $viewModels */
+/** @var Escaper $escaper */
+/** @var Customer $customerViewModel */
+
+$customerViewModel = $viewModels->require(Customer::class);
+?>
+<script>
+    "use strict";
+
+    function initPermissionsBar() {
+        return {
+            permission: null,
+
+            init() {
+                this.permission = Notification.permission;
+            },
+
+            async requestPermission() {
+                this.permission = await Notification.requestPermission();
+            }
+        }
+    }
+</script>
+

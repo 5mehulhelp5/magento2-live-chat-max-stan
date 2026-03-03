@@ -18,7 +18,7 @@ use Magento\TestFramework\Fixture\DbIsolation;
 use Magento\TestFramework\Helper\Bootstrap;
 use MaxStan\LiveChat\Api\Data\MessageInterfaceFactory;
 use MaxStan\LiveChat\Api\MessageRepositoryInterface;
-use MaxStan\LiveChat\Model\UserChatManagement;
+use MaxStan\LiveChat\Model\ChatMessagesManagement;
 use MaxStan\LiveChat\Test\Integration\Fixture\Conversation as ConversationFixture;
 use MaxStan\LiveChat\Test\Integration\Fixture\Message as MessageFixture;
 use MaxStan\LiveChat\Test\Integration\Mock\MercureHubStub;
@@ -28,7 +28,7 @@ use PHPUnit\Framework\TestCase;
 
 class UserChatManagementTest extends TestCase
 {
-    private ?UserChatManagement $chatManagement;
+    private ?ChatMessagesManagement $chatManagement;
     private ?UserContextStub $userContext;
     private ?MercureTopicPublisherSpy $mercureSpy;
 
@@ -39,7 +39,7 @@ class UserChatManagementTest extends TestCase
         $this->userContext = new UserContextStub();
         $this->mercureSpy = new MercureTopicPublisherSpy();
 
-        $this->chatManagement = $objectManager->create(UserChatManagement::class, [
+        $this->chatManagement = $objectManager->create(ChatMessagesManagement::class, [
             'userContext' => $this->userContext,
             'mercureTopicPublisher' => $this->mercureSpy,
             'mercureHub' => $objectManager->create(MercureHubStub::class),
@@ -227,7 +227,7 @@ class UserChatManagementTest extends TestCase
         $this->setCustomerContext($customerId);
 
         $page1 = $this->chatManagement->getMessages($conversationId, 1);
-        $this->assertCount(UserChatManagement::MESSAGES_LIMIT, $page1);
+        $this->assertCount(ChatMessagesManagement::MESSAGES_LIMIT, $page1);
 
         $page2 = $this->chatManagement->getMessages($conversationId, 2);
         $this->assertCount(5, $page2);

@@ -15,17 +15,22 @@ use Magento\Framework\View\Element\Template;
 $heroicons = $viewModels->require(HeroiconsOutline::class);
 ?>
 <li
-    class="border-b border-b-gray-200"
+    class="livechat-conversation-wrapper"
 >
     <button
-        class="text-left hover:bg-gray-100 px-2.5 py-3.5 w-full"
+        class="livechat-conversation"
         :aria-label="getConversationLabel(conversation)"
-        @click="openConversation(conversation)"
+        @click="openConversation(conversation.id)"
     >
-        <div class="flex justify-between gap-1">
-            <span class="font-medium" x-html="formatConversationTitle(conversation.created_at)"></span>
-            <p class="text-gray-500 text-sm" x-text="formatLastMessageDate(conversation)"></p>
+        <div class="livechat-conversation-title">
+            <p class="title" x-html="formatConversationTitle(conversation.created_at)"></p>
+            <span class="last-message-date" x-text="formatLastMessageDate(conversation)"></span>
         </div>
-        <p class="text-sm mt-0.5" x-text="formatConversationMessagePreview(conversation)"></p>
+        <div class="livechat-conversation-preview">
+            <p class="preview-message" x-text="formatConversationMessagePreview(conversation)"></p>
+            <template x-if="conversation.total_unread">
+                <div class="unread" x-text="conversation.total_unread >= 10 ? '9+' : conversation.total_unread"></div>
+            </template>
+        </div>
     </button>
 </li>

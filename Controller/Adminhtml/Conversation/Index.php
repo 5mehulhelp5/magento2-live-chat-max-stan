@@ -8,6 +8,7 @@ use Magento\Backend\App\Action\Context;
 use Magento\Framework\App\Action\HttpGetActionInterface;
 use Magento\Framework\View\Result\Page;
 use Magento\Framework\View\Result\PageFactory;
+use MaxStan\Mercure\Api\MercureHttpManagementInterface;
 
 class Index extends Action implements HttpGetActionInterface
 {
@@ -15,7 +16,8 @@ class Index extends Action implements HttpGetActionInterface
 
     public function __construct(
         Context $context,
-        private readonly PageFactory $resultPageFactory
+        private readonly PageFactory $resultPageFactory,
+        private readonly MercureHttpManagementInterface $mercureHttpManagement
     ) {
         parent::__construct($context);
     }

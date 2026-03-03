@@ -8,13 +8,17 @@ define([
     return Component.extend({
         defaults: {
             conversationId: null,
-            mercureUrl: '',
+            iri: '',
             messagesUrl: '',
             sendMessageUrl: '',
+            markReadUrl: '',
             messages: [],
             messageText: '',
             isLoading: false,
             isSending: false,
+            readObserver: null,
+            pendingReadIds: [],
+            readDebounceTimer: null,
 
             tracks: {
                 messages: true,
@@ -44,9 +48,88 @@ define([
                 showLoader: false
             }).done(function (data) {
                 self.messages = data;
-                self.scrollToBottom();
-            }).always(function () {
                 self.isLoading = false;
+                self.scrollToBottom();
+                self.initReadObserver();
+            }).fail(function () {
+                self.isLoading = false;
+            });
+        },
+
+        markAsRead: function (messageIds) {
+            if (!messageIds || !messageIds.length) return;
+
+            $.ajax({
+                url: this.markReadUrl,
+                type: 'POST',
+                data: {
+                    id: this.conversationId,
+                    form_key: window.FORM_KEY,
+                    messageIds: messageIds
+                },
+                dataType: 'json'
+            });
+        },
+
+        initReadObserver: function () {
+            var self = this;
+
+            if (this.readObserver) {
+                this.readObserver.disconnect();
+            }
+
+            this.pendingReadIds = [];
+            clearTimeout(this.readDebounceTimer);
+
+            var container = document.getElementById('livechat-messages');
+
+            if (!container) return;
+
+            this.readObserver = new IntersectionObserver(function (entries) {
+                entries.forEach(function (entry) {
+                    if (!entry.isIntersecting) return;
+
+                    var id = parseInt(entry.target.getAttribute('data-message-id'), 10);
+                    if (self.pendingReadIds.indexOf(id) === -1) {
+                        self.pendingReadIds.push(id);
+                    }
+
+                    self.readObserver.unobserve(entry.target);
+                });
+
+                if (self.pendingReadIds.length) {
+                    clearTimeout(self.readDebounceTimer);
+                    self.readDebounceTimer = setTimeout(function () {
+                        var ids = self.pendingReadIds.slice();
+                        self.pendingReadIds = [];
+                        self.markAsRead(ids);
+                    }, 300);
+                }
+            }, { root: container });
+
+            setTimeout(function () {
+                self.observeUnreadMessages();
+            }, 150);
+        },
+
+        observeUnreadMessages: function () {
+            if (!this.readObserver) return;
+
+            var self = this,
+                container = document.getElementById('livechat-messages');
+
+            if (!container) return;
+
+            // sender_type 2 = admin; observe customer messages (not admin)
+            container.querySelectorAll('[data-sender-type][data-message-id]').forEach(function (el) {
+                if (parseInt(el.getAttribute('data-sender-type'), 10) === 2) return;
+
+                var id = parseInt(el.getAttribute('data-message-id'), 10),
+                    msg = self.messages.find(function (m) { return parseInt(m.id, 10) === id; });
+
+                if (msg && parseInt(msg.status, 10) !== 1) {
+                    self.readObserver.observe(el);
+                }
             });
         },
 
@@ -75,26 +158,43 @@ define([
         },
 
         connectMercure: function () {
-            const self = this,
-                url = new URL(this.mercureUrl),
-                topic = 'conversation_index_index_' + this.conversationId;
+            var self = this;
 
-            url.searchParams.append('topic', topic);
+            window.addEventListener('admin-mercure:message:receive', function (event) {
+                var data = event.detail;
 
-            var eventSource = new EventSource(url.toString(), { withCredentials: true });
-
-            eventSource.onmessage = function (event) {
-                var payload = JSON.parse(event.data);
-
-                if (payload.type === 'message:received') {
-                    self.messages.push(payload.data);
+                if (parseInt(data.conversation_id, 10) === self.conversationId) {
+                    self.messages.push(data);
+                    self.messages = self.messages.slice();
                     self.scrollToBottom();
+                    setTimeout(function () {
+                        self.observeUnreadMessages();
+                    }, 150);
                 }
-            };
+            });
 
-            eventSource.onerror = function () {
-                console.error('LiveChat Mercure connection error');
-            };
+            window.addEventListener('admin-mercure:message:read', function (event) {
+                var data = event.detail;
+
+                if (parseInt(data.conversation_id, 10) !== self.conversationId) {
+                    return;
+                }
+
+                var messageIds = data.message_ids || [];
+
+                self.messages.forEach(function (msg) {
+                    if (messageIds.indexOf(parseInt(msg.id, 10)) !== -1) {
+                        msg.status = 1;
+                    }
+                });
+
+                self.messages = self.messages.slice();
+            });
+
+            window.mercureWorkerPort.postMessage({
+                type: 'subscribe',
+                topics: [this.iri]
+            });
         },
 
         scrollToBottom: function () {
@@ -153,7 +253,7 @@ define([
         },
 
         isRead: function (message) {
-            return message.status === 'read';
+            return parseInt(message.status, 10) === 1;
         },
 
         handleKeydown: function (data, event) {

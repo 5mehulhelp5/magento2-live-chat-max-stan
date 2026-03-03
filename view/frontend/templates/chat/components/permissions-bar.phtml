@@ -1,0 +1,24 @@
+<?php
+
+declare(strict_types=1);
+
+use Hyva\Theme\Model\ViewModelRegistry;
+use Hyva\Theme\ViewModel\HeroiconsOutline;
+use Magento\Framework\Escaper;
+use Magento\Framework\View\Element\Template;
+
+/** @var Template $block */
+/** @var ViewModelRegistry $viewModels */
+/** @var Escaper $escaper */
+/** @var HeroiconsOutline $heroicons */
+?>
+<div
+    class="flex gap-1 px-2 py-1 justify-center livechat-conversation-wrapper"
+    x-data="initPermissionsBar()"
+    x-show="permission !== 'granted'"
+>
+    <span aria-hidden="true">🔔</span>
+    <p>
+        <button class="text-primary underline font-medium" @click="requestPermission">Enable notifications</button> to know when we reply
+    </p>
+</div>

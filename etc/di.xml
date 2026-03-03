@@ -9,17 +9,19 @@
                 type="MaxStan\LiveChat\Model\ConversationRepository" />
     <preference for="MaxStan\LiveChat\Api\MessageRepositoryInterface"
                 type="MaxStan\LiveChat\Model\MessageRepository" />
-    <preference for="MaxStan\LiveChat\Api\UserChatManagementInterface"
-                type="MaxStan\LiveChat\Model\UserChatManagement" />
+    <preference for="MaxStan\LiveChat\Api\MessagesManagerInterface"
+                type="MaxStan\LiveChat\Service\MessagesManager" />
+    <preference for="MaxStan\LiveChat\Api\ConversationsManagerInterface"
+                type="MaxStan\LiveChat\Service\ConversationsManager" />
     <preference for="MaxStan\LiveChat\Api\Data\ConversationSearchResultsInterface"
                 type="MaxStan\LiveChat\Model\ConversationSearchResults" />
     <preference for="MaxStan\LiveChat\Api\Data\MessageSearchResultsInterface"
                 type="MaxStan\LiveChat\Model\MessageSearchResults" />
 
-    <type name="MaxStan\Mercure\Model\MercureTopicsProvider">
+    <type name="MaxStan\Mercure\Service\MercureTopicResolver">
         <arguments>
-            <argument name="publishTopicResolvers" xsi:type="array">
-                <item name="conversation_message_index" xsi:type="object">MaxStan\LiveChat\Model\Topic\ConversationMessageResolver</item>
+            <argument name="providers" xsi:type="array">
+                <item name="conversation" xsi:type="object">MaxStan\LiveChat\Model\Topic\ConversationProvider</item>
             </argument>
         </arguments>
     </type>
@@ -40,7 +42,4 @@
             <argument name="resourceModel" xsi:type="string">MaxStan\LiveChat\Model\ResourceModel\Conversation</argument>
         </arguments>
     </type>
-
-    <preference for="MaxStan\LiveChat\Api\AdminChatManagementInterface"
-                type="MaxStan\LiveChat\Model\AdminChatManagement" />
 </config>

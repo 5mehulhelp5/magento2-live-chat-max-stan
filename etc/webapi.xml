@@ -1,26 +1,32 @@
 <?xml version="1.0"?>
 <routes xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
         xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Webapi:etc/webapi.xsd">
-    <route url="/V1/conversations/mine" method="GET">
-        <service class="MaxStan\LiveChat\Api\UserChatManagementInterface" method="getConversations" />
-        <resources>
-            <resource ref="self" />
-        </resources>
-    </route>
     <route url="/V1/conversation/:conversationId/messages/:currentPage" method="GET">
-        <service class="MaxStan\LiveChat\Api\UserChatManagementInterface" method="getMessages" />
+        <service class="MaxStan\LiveChat\Api\MessagesManagerInterface" method="get" />
         <resources>
             <resource ref="self" />
         </resources>
     </route>
     <route url="/V1/conversation/:conversationId/message" method="POST">
-        <service class="MaxStan\LiveChat\Api\UserChatManagementInterface" method="sendMessage" />
+        <service class="MaxStan\LiveChat\Api\MessagesManagerInterface" method="send" />
+        <resources>
+            <resource ref="self" />
+        </resources>
+    </route>
+    <route url="/V1/conversation/:conversationId/read" method="PUT">
+        <service class="MaxStan\LiveChat\Api\MessagesManagerInterface" method="markAsRead" />
+        <resources>
+            <resource ref="self" />
+        </resources>
+    </route>
+    <route url="/V1/conversations/mine" method="GET">
+        <service class="MaxStan\LiveChat\Api\ConversationsManagerInterface" method="get" />
         <resources>
             <resource ref="self" />
         </resources>
     </route>
     <route url="/V1/conversation/create" method="POST">
-        <service class="MaxStan\LiveChat\Api\UserChatManagementInterface" method="createConversation" />
+        <service class="MaxStan\LiveChat\Api\ConversationsManagerInterface" method="create" />
         <resources>
             <resource ref="self" />
         </resources>

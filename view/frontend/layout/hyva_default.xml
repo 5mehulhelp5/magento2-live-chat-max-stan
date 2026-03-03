@@ -29,6 +29,10 @@
                                class="Magento\Framework\View\Element\Template"
                                as="message"
                                template="MaxStan_LiveChat::chat/components/message.phtml" />
+                        <block name="livechat.wrapper.layout.conversation.permissions-bar"
+                               class="Magento\Framework\View\Element\Template"
+                               as="permissions-bar"
+                               template="MaxStan_LiveChat::chat/components/permissions-bar.phtml" />
                     </block>
                     <block name="livechat.wrapper.layout.main"
                            class="Magento\Framework\View\Element\Template"
@@ -38,6 +42,10 @@
                                class="Magento\Framework\View\Element\Template"
                                as="conversation-preview"
                                template="MaxStan_LiveChat::chat/components/conversation-preview.phtml" />
+                        <block name="livechat.wrapper.layout.main.permissions-bar"
+                               class="Magento\Framework\View\Element\Template"
+                               as="permissions-bar"
+                               template="MaxStan_LiveChat::chat/components/permissions-bar.phtml" />
                     </block>
                 </container>
 
@@ -46,6 +54,14 @@
                        as="button"
                        template="MaxStan_LiveChat::chat/components/button.phtml" />
             </block>
+
+
+            <block name="livechat.scripts.main"
+                   class="Magento\Framework\View\Element\Template"
+                   template="MaxStan_LiveChat::chat/main-script.phtml" />
+            <block name="livechat.wrapper.permissions-bar"
+                   class="Magento\Framework\View\Element\Template"
+                   template="MaxStan_LiveChat::chat/permissions-bar-script.phtml" />
         </referenceContainer>
     </body>
 </page>

@@ -17,6 +17,17 @@ interface PublicConversationInterface
     public function setId($id);
 
     /**
+     * @return int
+     */
+    public function getTotalUnread(): int;
+
+    /**
+     * @param int $totalUnread
+     * @return int
+     */
+    public function setTotalUnread(int $totalUnread): int;
+
+    /**
      * @return string
      */
     public function getCreatedAt(): string;

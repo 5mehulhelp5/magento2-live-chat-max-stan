@@ -26,7 +26,8 @@
         <!-- /ko -->
 
         <div class="livechat-message-row"
-             data-bind="style: {
+             data-bind="attr: { 'data-message-id': message.id, 'data-sender-type': message.sender_type },
+                        style: {
                  justifyContent: $parent.isAdminMessage(message) ? 'flex-end' : 'flex-start',
                  marginTop: $index() > 0 && $parent.messages[$index() - 1].sender_type !== message.sender_type && !$parent.showDateSeparator($index()) ? '10px' : '0'
              }">

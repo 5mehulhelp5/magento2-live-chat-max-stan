@@ -25,8 +25,9 @@ $tooltip = $escaper->escapeHtml(__('Recipient have opened the chat/read the mess
     <div
         class="livechat-message-wrapper"
         :class="{
-            'own': message.sender_type === <?= $escaper->escapeHtml(UserContextInterface::USER_TYPE_CUSTOMER) ?>,
+            'own': +message.sender_type === <?= $escaper->escapeHtml(UserContextInterface::USER_TYPE_CUSTOMER) ?>,
         }"
+        x-intersect.half.once="addPendingReadIds(message)"
     >
         <div
             class="livechat-message"
@@ -46,17 +47,19 @@ $tooltip = $escaper->escapeHtml(__('Recipient have opened the chat/read the mess
                     x-text="formatMessageDate(message.created_at)"
                 ></time>
                 <div class="relative">
-                    <template x-if="!message.status">
+                    <template x-if="+message.status !== 1">
                         <span class="status">
-                            <span aria-hidden="true"><?= $heroicons->checkHtml('', 13, 13) ?></span>
+                            <span aria-hidden="true">
+                                <?= $heroicons->checkHtml('', 13, 13, ['title' => 'da']) ?>
+                            </span>
                             <span class="sr-only"><?= $escaper->escapeHtml(__('Sent')) ?></span>
                         </span>
                     </template>
-                    <template x-if="message.status === 'read'">
+                    <template x-if="+message.status === 1">
                         <span class="status flex">
                             <span aria-hidden="true" class="flex">
                                 <?= $heroicons->checkHtml('', 13, 13) ?>
-                                <?= $heroicons->checkHtml('absolute left-0.5', 13, 13) ?>
+                                <?= $heroicons->checkHtml('absolute left-[5px]', 13, 13) ?>
                             </span>
                             <span class="sr-only"><?= $escaper->escapeHtml(__('Read')) ?></span>
                         </span>

@@ -8,7 +8,7 @@ use Magento\Backend\App\Action\Context;
 use Magento\Framework\App\Action\HttpPostActionInterface;
 use Magento\Framework\Controller\Result\Json;
 use Magento\Framework\Controller\Result\JsonFactory;
-use MaxStan\LiveChat\Api\UserChatManagementInterface;
+use MaxStan\LiveChat\Api\MessagesManagerInterface;
 
 class SendMessage extends Action implements HttpPostActionInterface
 {
@@ -17,7 +17,7 @@ class SendMessage extends Action implements HttpPostActionInterface
     public function __construct(
         Context $context,
         private readonly JsonFactory $jsonFactory,
-        private readonly UserChatManagementInterface $chatManagement
+        private readonly MessagesManagerInterface $chatManagement
     ) {
         parent::__construct($context);
     }
@@ -29,7 +29,7 @@ class SendMessage extends Action implements HttpPostActionInterface
         $result = $this->jsonFactory->create();
 
         try {
-            $message = $this->chatManagement->sendMessage($conversationId, $text);
+            $message = $this->chatManagement->send($conversationId, $text);
             $result->setData($message->getData());
         } catch (\Exception $e) {
             $result->setHttpResponseCode(400);

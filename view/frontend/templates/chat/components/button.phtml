@@ -30,4 +30,7 @@ $attributes = ['title' => __('')];
     <span x-show="open" x-cloak aria-hidden="true">
         <?= $heroicons->xHtml('', 36, 36, $attributes) ?>
     </span>
+    <template x-if="getTotalUnread()">
+        <div class="unread" x-text="getTotalUnread() > 99 ? '99+' : getTotalUnread()"></div>
+    </template>
 </button>

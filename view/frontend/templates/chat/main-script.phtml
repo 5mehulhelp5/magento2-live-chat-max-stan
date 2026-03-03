@@ -1,0 +1,410 @@
+<?php
+
+declare(strict_types=1);
+
+use Hyva\Theme\Model\ViewModelRegistry;
+use Hyva\Theme\ViewModel\Customer;
+use Magento\Authorization\Model\UserContextInterface;
+use Magento\Framework\Escaper;
+use Magento\Framework\View\Element\Template;
+use MaxStan\LiveChat\Api\MessagesManagerInterface;
+
+/** @var Template $block */
+/** @var ViewModelRegistry $viewModels */
+/** @var Escaper $escaper */
+/** @var Customer $customerViewModel */
+
+$customerViewModel = $viewModels->require(Customer::class);
+?>
+<script>
+    "use strict";
+
+    function initLiveChat() {
+        return {
+            open: false,
+            isLoading: false,
+            layout: '<?= $escaper->escapeHtml($customerViewModel->customerLoggedIn() ? 'logged-in-welcome' : 'welcome') ?>',
+            customer: {},
+            message: null,
+            currentConversation: null,
+            conversations: null,
+            currentPage: 1,
+            hasMoreMessages: false,
+            isLoadingMore: false,
+            pendingReadIds: new Set(),
+            readDebounceTimer: null,
+            conversationTitleDateFormatter: null,
+            messageDateFormatter: null,
+            lastMessageDateFormatter: null,
+            separatorDateFormatter: null,
+            phrases: [
+                { emoji: '🤝', text: '<?= $escaper->escapeJs(__('Not sure? Let\'s figure it out together')) ?>' },
+                { emoji: '❓', text: '<?= $escaper->escapeJs(__('Got questions? We\'ve got answers')) ?>' },
+                { emoji: '😊', text: '<?= $escaper->escapeJs(__('Need help choosing? Ask our team')) ?>' },
+                { emoji: '🙌', text: '<?= $escaper->escapeJs(__('Our experts are ready to help you')) ?>' },
+                { emoji: '👋', text: '<?= $escaper->escapeJs(__('Real people, real answers. Let\'s talk!')) ?>' },
+                { emoji: '🎯', text: '<?= $escaper->escapeJs(__('Don\'t guess — ask us anything')) ?>' },
+                { emoji: '👌', text: '<?= $escaper->escapeJs(__('We\'ll help you find the right fit')) ?>' },
+                { emoji: '🔍', text: '<?= $escaper->escapeJs(__('Curious about something? Let\'s chat')) ?>' },
+                { emoji: '🛍️', text: '<?= $escaper->escapeJs(__('One chat away from the perfect pick')) ?>' },
+                { emoji: '⚡', text: '<?= $escaper->escapeJs(__('Let us save you time. Start a chat!')) ?>' },
+            ],
+
+            init() {
+                this.initConversations();
+            },
+
+            async initConversations() {
+                const response = await fetch(`${BASE_URL}rest/${CURRENT_STORE_CODE}/V1/conversations/mine`, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                });
+
+                if (!response.ok) {
+                    console.error('Error during fetch all customer conversations')
+                    return;
+                }
+
+                this.conversations = await response.json();
+                this.sortConversations();
+                this.layout = this.conversations.length ? 'main' : this.layout;
+            },
+
+            openConversation(conversationId) {
+                this.currentConversation = this.conversations.find(({ id }) => +id === +conversationId);
+                this.currentPage = 1;
+                this.layout = 'conversation';
+                this.hasMoreMessages = this.currentConversation.messages.length >= <?= $escaper->escapeJs(MessagesManagerInterface::MESSAGES_LIMIT) ?>;
+                this.resetReadState();
+            },
+
+            addPendingReadIds(message) {
+                if (
+                    +message.sender_type !== <?= $escaper->escapeJs(UserContextInterface::USER_TYPE_ADMIN) ?>
+                    || +message.status === 1
+                ) {
+                    return;
+                }
+
+                message.status = 1;
+                if (this.readDebounceTimer) {
+                    clearTimeout(this.readDebounceTimer)
+                }
+
+                this.pendingReadIds.add(message.id);
+                this.readDebounceTimer = setTimeout(() => this.markAsRead(), 300);
+            },
+
+            async markAsRead() {
+                const messageIds = [...this.pendingReadIds];
+                this.resetReadState();
+
+                await fetch(
+                    `${BASE_URL}rest/${CURRENT_STORE_CODE}/V1/conversation/${this.currentConversation.id}/read`,
+                    {
+                        method: 'PUT',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-Requested-With': 'XMLHttpRequest'
+                        },
+                        body: JSON.stringify({ conversationId: this.currentConversation.id, messageIds })
+                    }
+                );
+            },
+
+            resetReadState() {
+                this.pendingReadIds.clear();
+                clearTimeout(this.readDebounceTimer);
+                this.readDebounceTimer = null;
+            },
+
+            async loadMoreMessages() {
+                if (
+                    this.isLoadingMore
+                    || !this.currentConversation
+                    || !this.hasMoreMessages
+                ) {
+                    return;
+                }
+
+                this.isLoadingMore = true;
+                const nextPage = this.currentPage + 1;
+
+                const response = await fetch(
+                    `${BASE_URL}rest/${CURRENT_STORE_CODE}/V1/conversation/${this.currentConversation.id}/messages/${nextPage}`,
+                    {
+                        method: 'GET',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-Requested-With': 'XMLHttpRequest'
+                        }
+                    }
+                );
+
+                if (!response.ok) {
+                    this.isLoadingMore = false;
+                    console.error('Error loading more messages');
+                    return;
+                }
+
+                const messages = await response.json();
+                this.currentPage = nextPage;
+                if (messages.length) {
+                    this.hasMoreMessages = messages.length >= <?= $escaper->escapeJs(MessagesManagerInterface::MESSAGES_LIMIT) ?>;
+                    this.currentConversation.messages.unshift(...messages);
+                }
+
+                this.isLoadingMore = false;
+            },
+
+            async sendMessage() {
+                if (!this.message) {
+                    return;
+                }
+
+                const { id: conversationId } = this.currentConversation;
+                this.isLoading = true;
+
+                const response = await fetch(
+                    `${BASE_URL}rest/${CURRENT_STORE_CODE}/V1/conversation/${conversationId}/message`,
+                    {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-Requested-With': 'XMLHttpRequest'
+                        },
+                        body: JSON.stringify({
+                            text: this.message
+                        })
+                    }
+                );
+
+                this.isLoading = false;
+                if (!response.ok) {
+                    console.error('Error during fetch all customer conversations')
+                    return;
+                }
+
+                this.message = null;
+            },
+
+            async startNewConversation() {
+                this.isLoading = true;
+
+                const response = await fetch(`${BASE_URL}rest/${CURRENT_STORE_CODE}/V1/conversation/create`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                });
+
+                this.isLoading = false;
+
+                if (!response.ok) {
+                    console.error('Error creating new conversation');
+                    return;
+                }
+
+                const conversation = await response.json();
+                const result = this.conversations.find(({ id }) => id === +conversation.id);
+                if (result) {
+                    this.openConversation(result.id);
+                }
+            },
+
+            sortConversations() {
+                this.conversations.sort((a, b) => {
+                    const dateA = a.messages[0]?.created_at ?? a.created_at;
+                    const dateB = b.messages[0]?.created_at ?? b.created_at;
+
+                    return dateB.localeCompare(dateA);
+                });
+            },
+
+            showDateSeparator(index) {
+                const current = new Date(this.currentConversation.messages[index].created_at + ' UTC').toDateString();
+                if (index === 0) {
+                    return true;
+                }
+
+                const previous = new Date(this.currentConversation.messages[index - 1].created_at + ' UTC').toDateString();
+
+                return current !== previous;
+            },
+
+            formatSeparatorDate(date) {
+                if (!this.separatorDateFormatter) {
+                    this.separatorDateFormatter = new Intl.DateTimeFormat('en-US', {
+                        month: 'long',
+                        day: 'numeric'
+                    });
+                }
+
+                return this.separatorDateFormatter.format(new Date(date + ' UTC'))
+            },
+
+            formatMessageDate(date) {
+                if (!this.messageDateFormatter) {
+                    this.messageDateFormatter = new Intl.DateTimeFormat('en-US', {
+                        hour: 'numeric',
+                        minute: '2-digit',
+                        hour12: true
+                    });
+                }
+
+                return this.messageDateFormatter.format(new Date(date + ' UTC'))
+            },
+
+            formatConversationTitle(date) {
+                if (!this.conversationTitleDateFormatter) {
+                    this.conversationTitleDateFormatter = new Intl.DateTimeFormat(
+                        'en',
+                        { dateStyle: 'medium', timeStyle: 'short' }
+                    );
+                }
+
+                return '<span aria-hidden="true">💬</span> <?= $escaper->escapeHtml(__('Started')) ?> '
+                    + this.conversationTitleDateFormatter.format(new Date(date + ' UTC'));
+            },
+
+            formatLastMessageDate(conversation) {
+                const date = conversation.messages.at(-1)?.created_at;
+                if (!date) {
+                    return '';
+                }
+
+                if (!this.lastMessageDateFormatter) {
+                    this.lastMessageDateFormatter = new Intl.RelativeTimeFormat("en", { numeric: "auto", style: "narrow" });
+                }
+
+                const secondsDiff = Math.round((new Date(date + ' UTC') - Date.now()) / 1000);
+                const unitsInSec = [60, 3600, 86400, 86400 * 7, 86400 * 30, 86400 * 365, Infinity],
+                    unitStrings = ["second", "minute", "hour", "day", "week", "month", "year"],
+                    unitIndex = unitsInSec.findIndex((cutoff) => cutoff > Math.abs(secondsDiff));
+
+                const divisor = unitIndex ? unitsInSec[unitIndex - 1] : 1;
+                return this.lastMessageDateFormatter.format(
+                    Math.floor(secondsDiff / divisor),
+                    unitStrings[unitIndex]
+                );
+            },
+
+            formatConversationMessagePreview(conversation) {
+                const message = conversation.messages.at(-1);
+                if (!message) {
+                    return '<?= $escaper->escapeJs('No messages yet') ?>';
+                }
+
+                return hyva.str(
+                    '%1: %2',
+                    +message.sender_type === <?= $escaper->escapeHtml(UserContextInterface::USER_TYPE_CUSTOMER) ?>
+                        ? '<?= $escaper->escapeHtml(__('You')) ?>'
+                        : message.sender_name,
+                    message.text
+                );
+            },
+
+            getConversationLabel(conversation) {
+                return this.formatConversationTitle(conversation.created_at).replace(/<[^>]*>/g, '')
+                    + '. '
+                    + this.formatConversationMessagePreview(conversation);
+            },
+
+            getTotalUnread() {
+                return this.conversations?.reduce((acc, conversation) => acc + conversation.total_unread, 0);
+            },
+
+            notify(conversation, message) {
+                if (
+                    Notification?.permission !== 'granted'
+                    || message.sender_type !== <?= /** @noEscape */ UserContextInterface::USER_TYPE_CUSTOMER ?>
+                    || !document.hidden
+                ) {
+                    return;
+                }
+
+                new Notification(
+                    '<?= $escaper->escapeJs('New message!') ?>',
+                    {
+                        body: message.text,
+                        tag: `conversation-${conversation.id}-message`
+                    }
+                );
+            },
+
+            eventListeners: {
+                ['@private-content-loaded.window'](event) {
+                    const { customer = {} } = event.detail.data;
+                    this.customer = customer;
+
+                    window.mercureWorkerPort.postMessage({
+                        type: 'subscribe',
+                        topics: [`${window.origin}/livechat/${customer.uid}`]
+                    });
+                },
+
+                ['@mercure:message:receive.window'](event) {
+                    const message = event.detail;
+                    const { conversation_id: conversationId } = message;
+
+                    const conversation = this.conversations.find(({ id }) => id === conversationId);
+                    if (!conversation) {
+                        return;
+                    }
+
+                    if (message.sender_type !== <?= $escaper->escapeJs(UserContextInterface::USER_TYPE_CUSTOMER) ?>) {
+                        conversation.total_unread = (conversation.total_unread || 0) + 1;
+                    }
+
+                    // this.notify(conversation, message);
+                    conversation.messages.push(message);
+                    this.sortConversations();
+                },
+
+                ['@mercure:message:read.window'](event) {
+                    const { conversation_id: conversationId, message_ids: messageIds } = event.detail;
+                    const conversation = this.conversations.find(({ id }) => id === conversationId);
+
+                    if (!conversation) {
+                        return;
+                    }
+
+                    conversation.messages.forEach(msg => {
+                        if (!messageIds.includes(+msg.id)) {
+                            return;
+                        }
+
+                        msg.status = 1;
+                        if (msg.sender_type !== <?= $escaper->escapeJs(UserContextInterface::USER_TYPE_CUSTOMER) ?>) {
+                            conversation.total_unread = (conversation.total_unread || 1)  - 1;
+                        }
+                    });
+                },
+
+                ['@mercure:conversation:create.window'](event) {
+                    const { id: conversationId } = event.detail,
+                        conversation = this.conversations.find(({ id }) => id === +conversationId);
+
+                    if (conversation) {
+                        return;
+                    }
+
+                    event.detail.id = +event.detail.id;
+                    event.detail.messages = [];
+                    this.conversations.push(event.detail);
+                    this.sortConversations();
+
+                    if (this.pendingConversationId === event.detail.id) {
+                        this.openConversation(event.detail.id);
+                        this.pendingConversationId = null;
+                    }
+                }
+            }
+        }
+    }
+</script>
+

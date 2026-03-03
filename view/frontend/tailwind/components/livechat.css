@@ -9,7 +9,13 @@
 
     #livechat-trigger {
         /* order-last allows us to focus on the "Chat" button when we close popup using Esc key */
-        @apply btn btn-primary p-3 rounded-xl w-fit self-end shadow-lg order-last;
+        @apply relative btn btn-primary p-3 rounded-xl w-fit self-end shadow-lg order-last;
+
+        .unread {
+            @apply absolute top-0 right-0 -translate-y-1/2 translate-x-1/2;
+            @apply rounded-full bg-red-500 w-[27px] h-[26px] flex items-center justify-center;
+            @apply text-xs text-white leading-6;
+        }
     }
 
     .livechat-header {
@@ -79,6 +85,39 @@
 
         .livechat-date {
             @apply relative px-1 bg-white text-gray-500 font-medium;
+        }
+    }
+
+    .livechat-conversation-wrapper {
+        @apply border-b border-b-gray-200;
+
+        .livechat-conversation {
+            @apply text-left hover:bg-gray-100 px-2.5 py-3.5 w-full;
+        }
+
+        .livechat-conversation-title {
+            @apply flex justify-between gap-1;
+
+            .title {
+                @apply font-medium w-full overflow-hidden whitespace-nowrap text-ellipsis;
+            }
+
+            .last-message-date {
+                @apply text-gray-500 text-sm whitespace-nowrap leading-6;
+            }
+        }
+
+        .livechat-conversation-preview {
+            @apply flex justify-between items-center gap-1 mt-0.5;
+
+            .preview-message {
+                @apply text-sm w-full overflow-hidden whitespace-nowrap text-ellipsis;
+            }
+
+            .unread {
+                @apply rounded-full bg-red-500 w-[21px] h-[20px] flex items-center justify-center;
+                @apply text-xs text-white;
+            }
         }
     }
 }
