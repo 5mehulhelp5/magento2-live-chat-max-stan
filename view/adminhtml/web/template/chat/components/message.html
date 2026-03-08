@@ -1,0 +1,37 @@
+<!-- ko if: $parent.showDateSeparator($index()) -->
+    <div class="livechat-date-separator">
+        <span class="livechat-date-separator__label"
+              data-bind="text: $parent.formatSeparatorDate(message.created_at)"></span>
+        <div class="livechat-date-separator__line"></div>
+    </div>
+<!-- /ko -->
+<div class="livechat-message-row"
+     data-bind="
+        attr: { 'data-message-id': message.id, 'data-sender-type': message.sender_type },
+        css: { '_admin': message.sender_type === 2, '_customer': message.sender_type === 3 }
+     "
+>
+    <div class="livechat-bubble"
+         data-bind="css: { '_admin': message.sender_type === 2, '_customer': message.sender_type === 3 }">
+        <div data-bind="text: message.text"></div>
+        <div class="livechat-message-meta">
+            <span class="livechat-message-time"
+                  data-bind="text: $parent.formatMessageDate(message.created_at)">
+            </span>
+            <div class="livechat-message-status">
+                <!-- ko if: +message.sender_type === 2 -->
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" width="13" height="13" role="img">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"></path>
+                        <title>check</title>
+                    </svg>
+                <!-- /ko -->
+                <!-- ko if: +$parent.currentConversation.last_user_read_message_id >= message.id && +message.sender_type === 2 -->
+                    <svg class="__read" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" width="13" height="13" role="img">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"></path>
+                        <title>check</title>
+                    </svg>
+                <!-- /ko -->
+            </div>
+        </div>
+    </div>
+</div>

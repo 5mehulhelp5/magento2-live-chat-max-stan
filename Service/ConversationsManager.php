@@ -17,9 +17,9 @@ use MaxStan\LiveChat\Api\Data\ConversationInterfaceFactory;
 use MaxStan\LiveChat\Api\Data\MessageInterface;
 use MaxStan\LiveChat\Api\MessagesManagerInterface;
 use MaxStan\LiveChat\Model\Conversation;
+use MaxStan\LiveChat\Model\ResourceModel\Message as MessageResource;
 use MaxStan\LiveChat\Model\ResourceModel\Message\Collection;
 use MaxStan\LiveChat\Model\ResourceModel\Message\CollectionFactory;
-use MaxStan\Mercure\Api\MercureHttpManagementInterface;
 use MaxStan\Mercure\Api\MercurePublisherInterface;
 use MaxStan\Mercure\Model\Iri;
 
@@ -31,10 +31,11 @@ readonly class ConversationsManager implements ConversationsManagerInterface
         private ConversationInterfaceFactory $conversationFactory,
         private UserContextInterface $userContext,
         private MessagesManagerInterface $messagesManager,
-        private MercureHttpManagementInterface $mercureHttpManagement,
         private MercurePublisherInterface $mercurePublisher,
         private Iri $iri,
-        private CollectionFactory $collectionFactory
+        private CollectionFactory $collectionFactory,
+        private Authorization $authorization,
+        private MessageResource $messageResource
     ) {
     }
 
@@ -55,11 +56,10 @@ readonly class ConversationsManager implements ConversationsManagerInterface
 
         foreach ($conversations as $conversation) {
             $conversationId = (int)$conversation->getId();
+            $lastUserMessageReadId = $conversation->getLastUserReadMessageId();
             $conversation->setData('messages', $this->messagesManager->get($conversationId))
-                ->setData('total_unread', $this->getTotalUnread($conversationId));
+                ->setData('total_unread', $this->getTotalUnread($conversationId, $lastUserMessageReadId));
         }
-
-        $this->mercureHttpManagement->attach();
 
         return $conversations;
     }
@@ -98,20 +98,55 @@ readonly class ConversationsManager implements ConversationsManagerInterface
         $conversation->setData('messages', []);
         $topic = $this->iri->get("livechat/$userId");
         $this->mercurePublisher->publish($topic, $conversation->getData(), 'conversation:create');
-        $this->mercureHttpManagement->attach();
 
         return $conversation;
     }
 
-    private function getTotalUnread(int $conversationId): int
+    /**
+     * @inheritDoc
+     */
+    public function markAsRead(int $conversationId): bool
     {
+        $conversation = $this->authorization->isAllowed($conversationId);
+        $userId = $this->userContext->getUserId();
+        $lastMessageId = $this->messageResource->getLastMessageId($conversationId, $userId);
+        if (!$lastMessageId) {
+            return false;
+        }
+
+        $key = $userId === $conversation->getUserId()
+            ? 'last_user_read_message_id'
+            : 'last_admin_read_message_id';
+
+        $conversation->setData($key, $lastMessageId);
+        $this->conversationRepository->save($conversation);
+
+        $conversationCreatorUserId = $conversation->getUserId();
+        $this->mercurePublisher->publish(
+            $this->iri->get("livechat/$conversationCreatorUserId"),
+            [
+                'conversation_id' => $conversationId,
+                'last_user_read_message_id' => $conversation->getLastUserReadMessageId(),
+                'last_admin_read_message_id' => $conversation->getLastAdminReadMessageId()
+            ],
+            'conversation:read'
+        );
+
+        return true;
+    }
+
+    private function getTotalUnread(int $conversationId, ?int $lastUserMessageReadId): int
+    {
+        if (!$lastUserMessageReadId) {
+            return 0;
+        }
+
         $userId = (int)$this->userContext->getUserId();
         /** @var Collection $collection */
         $collection = $this->collectionFactory->create();
         $collection->addFieldToFilter(MessageInterface::CONVERSATION_ID, $conversationId)
-            ->addFieldToFilter(MessageInterface::STATUS, MessageInterface::STATUS_UNREAD)
+            ->addFieldToFilter('id', ['gt' => $lastUserMessageReadId])
             ->addFieldToFilter(MessageInterface::SENDER_ID, ['neq' => $userId]);
-
 
         return $collection->getSize();
     }

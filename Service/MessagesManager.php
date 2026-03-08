@@ -47,6 +47,11 @@ readonly class MessagesManager implements MessagesManagerInterface
      */
     public function send(int $conversationId, string $text): Message
     {
+        $text = trim($text);
+        if (!$text) {
+            throw new LocalizedException(__('Empty text provided'));
+        }
+
         $conversation = $this->authorization->isAllowed($conversationId);
         $createdAt = new DateTime('', new DateTimeZone('UTC'));
 
@@ -56,7 +61,7 @@ readonly class MessagesManager implements MessagesManagerInterface
         $message->setConversationId($conversationId)
             ->setSenderId($userId)
             ->setText($text)
-            ->setCreatedAt($createdAt->format('Y-m-d TH:i:s'));
+            ->setCreatedAt($createdAt->format('Y-m-d H:i:s'));
 
         try {
             $this->messageRepository->save($message);
@@ -109,7 +114,11 @@ readonly class MessagesManager implements MessagesManagerInterface
 
         foreach ($messages as $message) {
             $senderId = $message->getSenderId();
-            $message->setData('sender_name', $map[$senderId] ?? (string)__('Admin'));
+            if (!isset($map[$senderId])) {
+                $map[$senderId] = $this->getAdminName($senderId);
+            }
+
+            $message->setData('sender_name', $map[$senderId] ?? (string)__('Unknown'));
             $message->setData(
                 'sender_type',
                 $senderId === $userId
@@ -119,27 +128,6 @@ readonly class MessagesManager implements MessagesManagerInterface
         }
 
         return $messages;
-    }
-
-    /**
-     * @inheritDoc
-     */
-    public function markAsRead(int $conversationId, array $messageIds = []): bool
-    {
-        $conversation = $this->authorization->isAllowed($conversationId);
-        $this->messageResource->updateStatusBulk($messageIds, MessageInterface::STATUS_READ);
-
-        $conversationCreatorUserId = $conversation->getUserId();
-        $this->mercurePublisher->publish(
-            $this->iri->get("livechat/$conversationCreatorUserId"),
-            [
-                'conversation_id' => $conversationId,
-                'message_ids' => $messageIds
-            ],
-            'message:read'
-        );
-
-        return true;
     }
 
     private function getCustomerName(int $customerId): string

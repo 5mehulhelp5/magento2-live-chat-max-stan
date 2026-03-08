@@ -48,4 +48,26 @@ interface PublicConversationInterface
      * @return \MaxStan\LiveChat\Api\Data\ConversationInterface
      */
     public function setMessages(array $messages): PublicConversationInterface;
+
+    /**
+     * @return int
+     */
+    public function getLastUserReadMessageId(): ?int;
+
+    /**
+     * @param int $lastUserReadMessageId
+     * @return \MaxStan\LiveChat\Api\Data\ConversationInterface
+     */
+    public function setLastUserReadMessageId(int $lastUserReadMessageId): ConversationInterface;
+
+    /**
+     * @return int
+     */
+    public function getLastAdminReadMessageId(): ?int;
+
+    /**
+     * @param int $lastAdminReadMessageId
+     * @return \MaxStan\LiveChat\Api\Data\ConversationInterface
+     */
+    public function setLastAdminReadMessageId(int $lastAdminReadMessageId): ConversationInterface;
 }

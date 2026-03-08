@@ -1,0 +1,38 @@
+<?php
+
+declare(strict_types=1);
+
+use Hyva\Theme\Model\ViewModelRegistry;
+use Magento\Authorization\Model\UserContextInterface;
+use Magento\Backend\Block\Template;
+use Magento\Framework\Escaper;
+use MaxStan\LiveChat\ViewModel\AdminOptions;
+
+/** @var Template $block */
+/** @var Escaper $escaper */
+/** @var ViewModelRegistry $viewModels */
+/** @var AdminOptions $adminOptionsViewModel */
+$adminOptionsViewModel = $viewModels->require(AdminOptions::class);
+?>
+<!-- ko scope: 'livechat-widget' -->
+    <div id="livechat-widget">
+        <!-- ko template: 'MaxStan_LiveChat/chat/components/button' --><!-- /ko -->
+        <!-- ko template: 'MaxStan_LiveChat/chat/wrapper' --><!-- /ko -->
+    </div>
+<!-- /ko -->
+
+<script type="text/x-magento-init">
+{
+    "#livechat-widget": {
+        "Magento_Ui/js/core/app": {
+            "components": {
+                "livechat-widget": {
+                    "component": "MaxStan_LiveChat/js/main",
+                    "endpoint": <?= $adminOptionsViewModel->getEndpointJson() ?>,
+                    "adminSenderId": <?= /** @noEscape */ UserContextInterface::USER_TYPE_ADMIN ?>
+                }
+            }
+        }
+    }
+}
+</script>

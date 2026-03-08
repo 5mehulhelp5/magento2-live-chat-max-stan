@@ -13,7 +13,6 @@ use Magento\Framework\View\Element\Template;
 /** @var HeroiconsOutline $heroicons */
 
 $heroicons = $viewModels->require(HeroiconsOutline::class);
-$attributes = ['title' => __('')];
 ?>
 <button
     id="livechat-trigger"
@@ -25,10 +24,10 @@ $attributes = ['title' => __('')];
     @click="open = !open"
 >
     <span x-show="!open" aria-hidden="true">
-        <?= $heroicons->chatHtml('', 36, 36, $attributes) ?>
+        <?= $heroicons->chatHtml('', 36, 36) ?>
     </span>
     <span x-show="open" x-cloak aria-hidden="true">
-        <?= $heroicons->xHtml('', 36, 36, $attributes) ?>
+        <?= $heroicons->xHtml('', 36, 36) ?>
     </span>
     <template x-if="getTotalUnread()">
         <div class="unread" x-text="getTotalUnread() > 99 ? '99+' : getTotalUnread()"></div>

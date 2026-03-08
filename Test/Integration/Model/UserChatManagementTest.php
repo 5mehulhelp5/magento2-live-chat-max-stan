@@ -6,43 +6,53 @@ namespace MaxStan\LiveChat\Test\Integration\Model;
 use Magento\Authorization\Model\UserContextInterface;
 use Magento\Customer\Test\Fixture\Customer as CustomerFixture;
 use Magento\Framework\Exception\AuthorizationException;
-use Magento\Framework\Exception\CouldNotSaveException;
-use Magento\Framework\Exception\InputException;
 use Magento\Framework\Exception\LocalizedException;
-use Magento\Framework\Exception\NoSuchEntityException;
-use Magento\Framework\Stdlib\Cookie\CookieSizeLimitReachedException;
-use Magento\Framework\Stdlib\Cookie\FailureToSendException;
 use Magento\TestFramework\Fixture\DataFixture;
 use Magento\TestFramework\Fixture\DataFixtureStorageManager;
 use Magento\TestFramework\Fixture\DbIsolation;
 use Magento\TestFramework\Helper\Bootstrap;
 use MaxStan\LiveChat\Api\Data\MessageInterfaceFactory;
 use MaxStan\LiveChat\Api\MessageRepositoryInterface;
-use MaxStan\LiveChat\Model\ChatMessagesManagement;
+use MaxStan\LiveChat\Api\MessagesManagerInterface;
+use MaxStan\LiveChat\Service\Authorization;
+use MaxStan\LiveChat\Service\ConversationsManager;
+use MaxStan\LiveChat\Service\MessagesManager;
 use MaxStan\LiveChat\Test\Integration\Fixture\Conversation as ConversationFixture;
 use MaxStan\LiveChat\Test\Integration\Fixture\Message as MessageFixture;
-use MaxStan\LiveChat\Test\Integration\Mock\MercureHubStub;
-use MaxStan\LiveChat\Test\Integration\Mock\MercureTopicPublisherSpy;
+use MaxStan\LiveChat\Test\Integration\Mock\MercurePublisherSpy;
 use MaxStan\LiveChat\Test\Integration\Mock\UserContextStub;
+use MaxStan\Mercure\Api\MercurePublisherInterface;
 use PHPUnit\Framework\TestCase;
 
 class UserChatManagementTest extends TestCase
 {
-    private ?ChatMessagesManagement $chatManagement;
+    private ?ConversationsManager $conversationsManager;
+    private ?MessagesManager $messagesManager;
     private ?UserContextStub $userContext;
-    private ?MercureTopicPublisherSpy $mercureSpy;
+    private ?MercurePublisherSpy $mercureSpy;
 
     protected function setUp(): void
     {
         $objectManager = Bootstrap::getObjectManager();
 
         $this->userContext = new UserContextStub();
-        $this->mercureSpy = new MercureTopicPublisherSpy();
+        $this->mercureSpy = new MercurePublisherSpy();
 
-        $this->chatManagement = $objectManager->create(ChatMessagesManagement::class, [
+        $authorization = $objectManager->create(Authorization::class, [
             'userContext' => $this->userContext,
-            'mercureTopicPublisher' => $this->mercureSpy,
-            'mercureHub' => $objectManager->create(MercureHubStub::class),
+        ]);
+
+        $this->messagesManager = $objectManager->create(MessagesManager::class, [
+            'userContext' => $this->userContext,
+            'mercurePublisher' => $this->mercureSpy,
+            'authorization' => $authorization,
+        ]);
+
+        $this->conversationsManager = $objectManager->create(ConversationsManager::class, [
+            'userContext' => $this->userContext,
+            'mercurePublisher' => $this->mercureSpy,
+            'authorization' => $authorization,
+            'messagesManager' => $this->messagesManager,
         ]);
     }
 
@@ -64,24 +74,21 @@ class UserChatManagementTest extends TestCase
 
         $this->setCustomerContext($customerId);
 
-        $conversation = $this->chatManagement->createConversation();
+        $conversation = $this->conversationsManager->create();
 
         $this->assertEquals($customerId, $conversation->getUserId());
         $this->assertNotEmpty($conversation->getCreatedAt());
         $this->assertNotNull($conversation->getId());
     }
 
-    #[
-        DbIsolation(true),
-        DataFixture(CustomerFixture::class, as: 'customer'),
-        DataFixture(ConversationFixture::class, ['customer' => '$customer$'], 'conversation'),
-    ]
+    #[DbIsolation(true)]
+    #[DataFixture(CustomerFixture::class, as: 'customer')]
     public function testCreateConversationRequiresAuth(): void
     {
         $this->setGuestContext();
 
         $this->expectException(LocalizedException::class);
-        $this->chatManagement->createConversation();
+        $this->conversationsManager->create();
     }
 
     // --- sendMessage ---
@@ -99,7 +106,7 @@ class UserChatManagementTest extends TestCase
 
         $this->setCustomerContext($customerId);
 
-        $message = $this->chatManagement->sendMessage($conversationId, 'Hello from test');
+        $message = $this->messagesManager->send($conversationId, 'Hello from test');
 
         $this->assertNotNull($message->getId());
         $this->assertEquals($conversationId, $message->getConversationId());
@@ -120,16 +127,13 @@ class UserChatManagementTest extends TestCase
 
         $this->setCustomerContext($customerId);
 
-        $this->chatManagement->sendMessage($conversationId, 'Mercure test');
+        $this->messagesManager->send($conversationId, 'Mercure test');
 
         $published = $this->mercureSpy->getPublishedMessages();
         $this->assertCount(1, $published);
-        $this->assertStringContainsString(
-            "conversation_index_index_$conversationId",
-            $published[0]['topic']
-        );
-        $this->assertEquals('message:received', $published[0]['data']['type']);
-        $this->assertEquals('Mercure test', $published[0]['data']['data']['text']);
+        $this->assertStringContainsString('livechat/', $published[0]['topic']);
+        $this->assertEquals('message:receive', $published[0]['event']);
+        $this->assertEquals('Mercure test', $published[0]['data']['text']);
     }
 
     #[
@@ -146,7 +150,7 @@ class UserChatManagementTest extends TestCase
         $this->setCustomerContext($customerBId);
 
         $this->expectException(AuthorizationException::class);
-        $this->chatManagement->sendMessage($conversationId, 'Should fail');
+        $this->messagesManager->send($conversationId, 'Should fail');
     }
 
     #[
@@ -161,7 +165,7 @@ class UserChatManagementTest extends TestCase
         $this->setGuestContext();
 
         $this->expectException(AuthorizationException::class);
-        $this->chatManagement->sendMessage($conversationId, 'Should fail');
+        $this->messagesManager->send($conversationId, 'Should fail');
     }
 
     // --- getMessages ---
@@ -181,7 +185,7 @@ class UserChatManagementTest extends TestCase
 
         $this->setCustomerContext($customerId);
 
-        $messages = $this->chatManagement->getMessages($conversationId);
+        $messages = $this->messagesManager->get($conversationId);
 
         $this->assertCount(3, $messages);
 
@@ -194,12 +198,6 @@ class UserChatManagementTest extends TestCase
         }
     }
 
-    /**
-     * @throws NoSuchEntityException
-     * @throws CouldNotSaveException
-     * @throws AuthorizationException
-     * @throws LocalizedException
-     */
     #[
         DbIsolation(true),
         DataFixture(CustomerFixture::class, as: 'customer'),
@@ -215,7 +213,7 @@ class UserChatManagementTest extends TestCase
         $messageFactory = $objectManager->get(MessageInterfaceFactory::class);
         $messageRepository = $objectManager->get(MessageRepositoryInterface::class);
 
-        for ($i = 0; $i < 55; $i++) {
+        for ($i = 0; $i < 30; $i++) {
             $message = $messageFactory->create();
             $message->setConversationId($conversationId);
             $message->setSenderId($customerId);
@@ -226,17 +224,13 @@ class UserChatManagementTest extends TestCase
 
         $this->setCustomerContext($customerId);
 
-        $page1 = $this->chatManagement->getMessages($conversationId, 1);
-        $this->assertCount(ChatMessagesManagement::MESSAGES_LIMIT, $page1);
+        $page1 = $this->messagesManager->get($conversationId, 1);
+        $this->assertCount(MessagesManagerInterface::MESSAGES_LIMIT, $page1);
 
-        $page2 = $this->chatManagement->getMessages($conversationId, 2);
+        $page2 = $this->messagesManager->get($conversationId, 2);
         $this->assertCount(5, $page2);
     }
 
-    /**
-     * @throws NoSuchEntityException
-     * @throws LocalizedException
-     */
     #[
         DataFixture(CustomerFixture::class, ['email' => 'owner2@test.com'], 'customerA'),
         DataFixture(CustomerFixture::class, ['email' => 'other2@test.com'], 'customerB'),
@@ -252,13 +246,9 @@ class UserChatManagementTest extends TestCase
         $this->setCustomerContext($customerBId);
 
         $this->expectException(AuthorizationException::class);
-        $this->chatManagement->getMessages($conversationId);
+        $this->messagesManager->get($conversationId);
     }
 
-    /**
-     * @throws NoSuchEntityException
-     * @throws LocalizedException
-     */
     #[
         DataFixture(CustomerFixture::class, as: 'customer'),
         DataFixture(ConversationFixture::class, ['customer' => '$customer$'], 'conversation'),
@@ -271,19 +261,11 @@ class UserChatManagementTest extends TestCase
         $this->setGuestContext();
 
         $this->expectException(AuthorizationException::class);
-        $this->chatManagement->getMessages($conversationId);
+        $this->messagesManager->get($conversationId);
     }
 
     // --- getConversations ---
 
-    /**
-     * @throws NoSuchEntityException
-     * @throws FailureToSendException
-     * @throws CookieSizeLimitReachedException
-     * @throws AuthorizationException
-     * @throws InputException
-     * @throws LocalizedException
-     */
     #[
         DataFixture(CustomerFixture::class, as: 'customer'),
         DataFixture(ConversationFixture::class, ['customer' => '$customer$'], 'c1'),
@@ -298,7 +280,7 @@ class UserChatManagementTest extends TestCase
 
         $this->setCustomerContext($customerId);
 
-        $conversations = $this->chatManagement->getConversations();
+        $conversations = $this->conversationsManager->get();
 
         $this->assertCount(2, $conversations);
 
@@ -310,14 +292,6 @@ class UserChatManagementTest extends TestCase
         }
     }
 
-    /**
-     * @throws NoSuchEntityException
-     * @throws FailureToSendException
-     * @throws CookieSizeLimitReachedException
-     * @throws AuthorizationException
-     * @throws InputException
-     * @throws LocalizedException
-     */
     #[
         DataFixture(CustomerFixture::class, ['email' => 'userA@test.com'], 'customerA'),
         DataFixture(CustomerFixture::class, ['email' => 'userB@test.com'], 'customerB'),
@@ -332,25 +306,18 @@ class UserChatManagementTest extends TestCase
 
         $this->setCustomerContext($customerAId);
 
-        $conversations = $this->chatManagement->getConversations();
+        $conversations = $this->conversationsManager->get();
 
         $this->assertCount(1, $conversations);
         $conversation = reset($conversations);
         $this->assertEquals($convAId, (int)$conversation->getId());
     }
 
-    /**
-     * @throws NoSuchEntityException
-     * @throws FailureToSendException
-     * @throws CookieSizeLimitReachedException
-     * @throws AuthorizationException
-     * @throws InputException
-     */
     public function testGetConversationsRequiresAuth(): void
     {
         $this->setGuestContext();
 
-        $conversations = $this->chatManagement->getConversations();
+        $conversations = $this->conversationsManager->get();
 
         $this->assertEmpty($conversations);
     }

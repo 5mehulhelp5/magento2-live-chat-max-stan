@@ -28,8 +28,8 @@ $heroicons = $viewModels->require(HeroiconsOutline::class);
         </div>
         <div class="livechat-conversation-preview">
             <p class="preview-message" x-text="formatConversationMessagePreview(conversation)"></p>
-            <template x-if="conversation.total_unread">
-                <div class="unread" x-text="conversation.total_unread >= 10 ? '9+' : conversation.total_unread"></div>
+            <template x-if="getConversationUnread(conversation)">
+                <div class="unread" x-text="getConversationUnread(conversation) >= 10 ? '9+' : getConversationUnread(conversation)"></div>
             </template>
         </div>
     </button>

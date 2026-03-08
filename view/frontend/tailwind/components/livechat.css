@@ -1,6 +1,6 @@
 #livechat-trigger {
-    /* order-last allows us to focus on the "Chat" button when we close popup using Esc key */
     @apply fixed bottom-3 right-3 md:bottom-5 md:right-5;
+    /* order-last allows us to focus on the "Chat" button when we close popup using Esc key */
     @apply btn btn-primary p-3 rounded-xl w-fit self-end shadow-lg order-last;
     @apply z-10 rounded-lg;
 
@@ -25,13 +25,17 @@
     }
 
     .livechat-header {
-        @apply w-full p-2 text-lg font-bold text-black text-center flex gap-3;
+        @apply w-full p-2 text-lg font-bold text-black flex gap-3;
         @apply bg-primary/30 rounded-t-md;
+
+        #livechat-title {
+            @apply w-full overflow-hidden whitespace-nowrap text-ellipsis;
+        }
     }
 
     .layout-main {
         .livechat-header {
-            @apply justify-center;
+            @apply justify-center text-center;
         }
 
         .livechat-body {

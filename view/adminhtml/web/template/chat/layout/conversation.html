@@ -1,0 +1,49 @@
+<div class="livechat-widget-conversation">
+    <div class="livechat-widget-header">
+        <div
+            class="livechat-widget-back"
+            data-bind="click: () => {
+                layout = 'main';
+                currentConversation = null;
+            }"
+        >
+            &larr;
+        </div>
+        <h2 id="livechat-widget-title"
+            data-bind="html: formatConversationTitle(currentConversation.created_at)"
+        ></h2>
+    </div>
+
+    <div class="livechat-widget-messages">
+        <ul class="livechat-messages-list">
+            <!-- ko if: currentConversation.messages.length === 0 -->
+                <div class="livechat-placeholder">No messages yet.</div>
+            <!-- /ko -->
+
+            <!-- ko if: hasMoreMessages -->
+                <button
+                    class="action-secondary livechat-widget-load-more"
+                    data-bind="click: loadMoreMessages, i18n: 'Load More'"
+                ></button>
+            <!-- /ko -->
+
+            <!-- ko foreach: { data: currentConversation.messages, as: 'message'  } -->
+                <!-- ko template: 'MaxStan_LiveChat/chat/components/message' --><!-- /ko -->
+            <!-- /ko -->
+        </ul>
+    </div>
+
+    <form class="livechat-widget-reply admin__field-control" data-bind="submit: sendMessage">
+        <input type="hidden" name="id" data-bind="value: currentConversation.id" />
+        <input type="text"
+               name="text"
+               class="admin__control-text"
+               placeholder="Type your reply..."
+               data-bind="value: message, valueUpdate: 'input'" />
+        <button class="action-primary"
+                type="submit"
+                data-bind="disable: !message || isLoading">
+            <span data-bind="i18n: 'Send'"></span>
+        </button>
+    </form>
+</div>

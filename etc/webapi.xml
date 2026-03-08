@@ -14,7 +14,7 @@
         </resources>
     </route>
     <route url="/V1/conversation/:conversationId/read" method="PUT">
-        <service class="MaxStan\LiveChat\Api\MessagesManagerInterface" method="markAsRead" />
+        <service class="MaxStan\LiveChat\Api\ConversationsManagerInterface" method="markAsRead" />
         <resources>
             <resource ref="self" />
         </resources>

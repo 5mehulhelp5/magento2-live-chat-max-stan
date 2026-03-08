@@ -7,7 +7,6 @@
         <column xsi:type="int" name="conversation_id" unsigned="true" nullable="false" comment="Conversation ID" />
         <column xsi:type="int" name="sender_id" unsigned="true" nullable="false" comment="Sender ID" />
         <column xsi:type="text" name="text" nullable="false" comment="Text" />
-        <column xsi:type="smallint" name="status" nullable="false" default="0" comment="Status (e.g read)" />
         <column xsi:type="datetime" name="created_at" default="CURRENT_TIMESTAMP" on_update="false" nullable="false"
                 comment="Created At" />
 
@@ -28,14 +27,16 @@
     <table name="livechat_conversations" engine="innodb" comment="Magento Asset Table">
         <column xsi:type="int" name="id" unsigned="true" identity="true" nullable="false" comment="Identifier" />
         <column xsi:type="int" name="user_id" unsigned="true" nullable="false" comment="User ID" />
+        <column xsi:type="int" name="last_user_read_message_id" unsigned="true" nullable="true" comment="Last User Read Message ID" />
+        <column xsi:type="int" name="last_admin_read_message_id" unsigned="true" nullable="true" comment="Last Admin Read Message ID" />
         <column xsi:type="datetime" name="created_at" default="CURRENT_TIMESTAMP" on_update="false" nullable="false" comment="Created At" />
 
         <constraint xsi:type="primary" referenceId="PRIMARY">
             <column name="id" />
         </constraint>
 
-        <constraint xsi:type="foreign" referenceId="LIVECHAT_MESSAGES_USER_ID_CUSTOMER_ENTITY_ENTITY_ID"
-                    table="livechat_messages" column="user_id"
+        <constraint xsi:type="foreign" referenceId="LIVECHAT_CONVERSATION_USER_ID_CUSTOMER_ENTITY_ENTITY_ID"
+                    table="livechat_conversations" column="user_id"
                     referenceTable="customer_entity" referenceColumn="entity_id"
                     onDelete="CASCADE" />
     </table>

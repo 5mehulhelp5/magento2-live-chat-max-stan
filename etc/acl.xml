@@ -4,9 +4,7 @@
     <acl>
         <resources>
             <resource id="Magento_Backend::admin">
-                <resource id="MaxStan_LiveChat::livechat" title="Live Chat" sortOrder="10">
-                    <resource id="MaxStan_LiveChat::livechat_manage" title="Manage Conversations" sortOrder="10" />
-                </resource>
+                <resource id="MaxStan_LiveChat::livechat" title="Live Chat" sortOrder="999" />
             </resource>
         </resources>
     </acl>

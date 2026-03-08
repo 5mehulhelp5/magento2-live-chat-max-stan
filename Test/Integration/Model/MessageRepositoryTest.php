@@ -48,7 +48,6 @@ class MessageRepositoryTest extends TestCase
             'conversation' => '$conversation$',
             'sender' => '$customer$',
             'text' => 'Hello world',
-            'status' => 1,
         ], 'message'),
     ]
     public function testGetById(): void
@@ -63,7 +62,6 @@ class MessageRepositoryTest extends TestCase
         $this->assertEquals($fixtureConversation->getId(), $message->getConversationId());
         $this->assertEquals($fixtureCustomer->getId(), $message->getSenderId());
         $this->assertEquals('Hello world', $message->getText());
-        $this->assertEquals(1, $message->getStatus());
     }
 
     public function testGetByIdThrowsForNonExistent(): void
@@ -128,31 +126,6 @@ class MessageRepositoryTest extends TestCase
         $results = $this->repository->getList($searchCriteria);
 
         $this->assertEquals(3, $results->getTotalCount());
-    }
-
-    /**
-     * @throws LocalizedException
-     */
-    #[
-        DataFixture(CustomerFixture::class, as: 'customer'),
-        DataFixture(ConversationFixture::class, ['customer' => '$customer$'], 'conversation'),
-        DataFixture(MessageFixture::class, ['conversation' => '$conversation$', 'sender' => '$customer$', 'status' => 0], 'm1'),
-        DataFixture(MessageFixture::class, ['conversation' => '$conversation$', 'sender' => '$customer$', 'status' => 1], 'm2'),
-        DataFixture(MessageFixture::class, ['conversation' => '$conversation$', 'sender' => '$customer$', 'status' => 0], 'm3'),
-    ]
-    public function testGetListFilterByStatus(): void
-    {
-        $fixtures = DataFixtureStorageManager::getStorage();
-        $conversationId = (int)$fixtures->get('conversation')->getId();
-
-        $searchCriteria = $this->searchCriteriaBuilder
-            ->addFilter(MessageInterface::CONVERSATION_ID, $conversationId)
-            ->addFilter(MessageInterface::STATUS, 0)
-            ->create();
-
-        $results = $this->repository->getList($searchCriteria);
-
-        $this->assertEquals(2, $results->getTotalCount());
     }
 
     /**

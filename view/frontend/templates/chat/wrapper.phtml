@@ -14,8 +14,7 @@ use Magento\Framework\View\Element\Template;
     class="z-30"
     x-data="initLiveChat()"
     x-bind="eventListeners"
-    @keyup.escape="open = false"
-    @click.outside="open = false"
+    @keyup.escape.window="open = false"
 >
     <?= /** @noEscape */ $block->getChildHtml('button') ?>
 

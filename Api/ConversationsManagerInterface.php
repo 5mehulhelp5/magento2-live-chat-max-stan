@@ -13,7 +13,7 @@ use MaxStan\LiveChat\Model\Conversation;
 
 interface ConversationsManagerInterface
 {
-    public const int CONVERSATIONS_LIMIT = 25;
+    public const int CONVERSATIONS_LIMIT = 10;
 
     /**
      * @return \MaxStan\LiveChat\Api\Data\PublicConversationInterface[]
@@ -32,4 +32,15 @@ interface ConversationsManagerInterface
      * @throws LocalizedException
      */
     public function create(): Conversation;
+
+    /**
+     * Mark unread messages from the other party as read.
+     *
+     *
+     * @param int $conversationId
+     * @return bool
+     *
+     * @throws LocalizedException
+     */
+    public function markAsRead(int $conversationId): bool;
 }

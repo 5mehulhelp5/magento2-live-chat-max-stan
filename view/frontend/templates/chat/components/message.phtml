@@ -27,7 +27,6 @@ $tooltip = $escaper->escapeHtml(__('Recipient have opened the chat/read the mess
         :class="{
             'own': +message.sender_type === <?= $escaper->escapeHtml(UserContextInterface::USER_TYPE_CUSTOMER) ?>,
         }"
-        x-intersect.half.once="addPendingReadIds(message)"
     >
         <div
             class="livechat-message"
@@ -47,7 +46,7 @@ $tooltip = $escaper->escapeHtml(__('Recipient have opened the chat/read the mess
                     x-text="formatMessageDate(message.created_at)"
                 ></time>
                 <div class="relative">
-                    <template x-if="+message.status !== 1">
+                    <template x-if="+currentConversation.last_admin_read_message_id < message.id && +message.sender_type === <?= /** @noEscape */ UserContextInterface::USER_TYPE_CUSTOMER ?>">
                         <span class="status">
                             <span aria-hidden="true">
                                 <?= $heroicons->checkHtml('', 13, 13, ['title' => 'da']) ?>
@@ -55,7 +54,7 @@ $tooltip = $escaper->escapeHtml(__('Recipient have opened the chat/read the mess
                             <span class="sr-only"><?= $escaper->escapeHtml(__('Sent')) ?></span>
                         </span>
                     </template>
-                    <template x-if="+message.status === 1">
+                    <template x-if="+currentConversation.last_admin_read_message_id >= message.id && +message.sender_type === <?= /** @noEscape */ UserContextInterface::USER_TYPE_CUSTOMER ?>">
                         <span class="status flex">
                             <span aria-hidden="true" class="flex">
                                 <?= $heroicons->checkHtml('', 13, 13) ?>

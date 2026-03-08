@@ -40,17 +40,6 @@ interface PublicMessageInterface
     public function setText(string $text): PublicMessageInterface;
 
     /**
-     * @return int
-     */
-    public function getStatus(): int;
-
-    /**
-     * @param int $status
-     * @return \MaxStan\LiveChat\Api\Data\PublicMessageInterface
-     */
-    public function setStatus(int $status): PublicMessageInterface;
-
-    /**
      * @return string
      */
     public function getCreatedAt(): string;

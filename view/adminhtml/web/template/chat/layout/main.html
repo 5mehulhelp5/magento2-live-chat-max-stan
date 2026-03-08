@@ -1,0 +1,26 @@
+<div class="livechat-widget-main">
+    <div class="livechat-widget-header">
+        <h2 id="livechat-widget-title">
+            <span aria-hidden="true" data-bind="text: currentPhrase.emoji"></span>
+            <span data-bind="text: currentPhrase.text"></span>
+        </h2>
+    </div>
+    <div class="livechat-widget-body">
+        <!-- ko if: isLoading -->
+            <div class="livechat-placeholder">Loading conversations...</div>
+        <!-- /ko -->
+        <!-- ko ifnot: isLoading -->
+            <ul class="livechat-widget-conversation-list">
+                <!-- ko foreach: { data: conversations, as: 'conversation' } -->
+                    <!-- ko template: 'MaxStan_LiveChat/chat/components/conversation-preview' --><!-- /ko -->
+                <!-- /ko -->
+            </ul>
+            <!-- ko if: hasMoreConversations -->
+                <button
+                    class="action-secondary livechat-widget-load-more __conversation"
+                    data-bind="click: loadConversations, i18n: 'Load More'"
+                ></button>
+            <!-- /ko -->
+        <!-- /ko -->
+    </div>
+</div>

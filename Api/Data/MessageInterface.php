@@ -9,11 +9,7 @@ interface MessageInterface
     public const string SENDER_ID = "sender_id";
     public const string CONVERSATION_ID = "conversation_id";
     public const string TEXT = "text";
-    public const string STATUS = "status";
     public const string CREATED_AT = "created_at";
-
-    public const int STATUS_UNREAD = 0;
-    public const int STATUS_READ = 1;
 
     /**
      * @return int
@@ -58,17 +54,6 @@ interface MessageInterface
      * @return \MaxStan\LiveChat\Api\Data\MessageInterface
      */
     public function setText(string $text): MessageInterface;
-
-    /**
-     * @return int
-     */
-    public function getStatus(): int;
-
-    /**
-     * @param int $status
-     * @return \MaxStan\LiveChat\Api\Data\MessageInterface
-     */
-    public function setStatus(int $status): MessageInterface;
 
     /**
      * @return string

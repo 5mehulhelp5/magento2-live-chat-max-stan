@@ -1,0 +1,17 @@
+<li class="livechat-widget-conversation-item">
+    <button class="livechat-widget-conversation-btn"
+            type="button"
+            data-bind="click: () => $parent.openConversation(conversation.id)">
+        <div class="livechat-widget-conversation-title">
+            <span class="__title" data-bind="html: $parent.formatConversationTitle(conversation.created_at)"></span>
+            <span class="__date" data-bind="text: $parent.formatLastMessageDate(conversation)"></span>
+        </div>
+        <div class="livechat-widget-conversation-preview">
+            <span class="__message" data-bind="text: $parent.formatConversationMessagePreview(conversation)"></span>
+            <!-- ko if: $parent.getConversationUnread(conversation) > 0 -->
+                <span class="livechat-widget-unread-badge"
+                      data-bind="text: $parent.getConversationUnread(conversation) >= 10 ? '9+' : $parent.getConversationUnread(conversation)"></span>
+            <!-- /ko -->
+        </div>
+    </button>
+</li>

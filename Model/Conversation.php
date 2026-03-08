@@ -28,13 +28,6 @@ class Conversation extends AbstractModel implements ConversationInterface
         return (int)$this->getData(self::USER_ID);
     }
 
-    /**
-     * Setter for UserId.
-     *
-     * @param int|null $userId
-     *
-     * @return void
-     */
     public function setUserId(int $userId): ConversationInterface
     {
         $this->setData(self::USER_ID, $userId);
@@ -50,6 +43,30 @@ class Conversation extends AbstractModel implements ConversationInterface
     public function setCreatedAt(string $createdAt): ConversationInterface
     {
         $this->setData(self::CREATED_AT, $createdAt);
+
+        return $this;
+    }
+
+    public function getLastUserReadMessageId(): ?int
+    {
+        return (int)$this->getData(static::LAST_USER_READ_MESSAGE_ID) ?: null;
+    }
+
+    public function setLastUserReadMessageId(int $lastUserReadMessageId): ConversationInterface
+    {
+        $this->setData(static::LAST_USER_READ_MESSAGE_ID, $lastUserReadMessageId);
+
+        return $this;
+    }
+
+    public function getLastAdminReadMessageId(): ?int
+    {
+        return (int)$this->getData(static::LAST_ADMIN_READ_MESSAGE_ID) ?: null;
+    }
+
+    public function setLastAdminReadMessageId(int $lastAdminReadMessageId): ConversationInterface
+    {
+        $this->setData(static::LAST_ADMIN_READ_MESSAGE_ID, $lastAdminReadMessageId);
 
         return $this;
     }

@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace MaxStan\LiveChat\Model\Topic;
 
 use Magento\Authorization\Model\UserContextInterface;
-use Magento\Framework\Exception\NoSuchEntityException;
 use MaxStan\Mercure\Api\MercureTopicProviderInterface;
 use MaxStan\Mercure\Model\Iri;
 

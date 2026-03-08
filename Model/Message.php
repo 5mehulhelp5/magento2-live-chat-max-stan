@@ -59,18 +59,6 @@ class Message extends AbstractModel implements MessageInterface
         return $this;
     }
 
-    public function getStatus(): int
-    {
-        return (int)$this->getData(self::STATUS);
-    }
-
-    public function setStatus(int $status): MessageInterface
-    {
-        $this->setData(self::STATUS, $status);
-
-        return $this;
-    }
-
     public function getCreatedAt(): string
     {
         return (string)$this->getData(self::CREATED_AT);

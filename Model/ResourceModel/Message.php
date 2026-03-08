@@ -3,9 +3,9 @@ declare(strict_types=1);
 
 namespace MaxStan\LiveChat\Model\ResourceModel;
 
+use Magento\Framework\DB\Sql\Expression;
 use Magento\Framework\Exception\LocalizedException;
 use Magento\Framework\Model\ResourceModel\Db\AbstractDb;
-use MaxStan\LiveChat\Api\Data\MessageInterface;
 
 class Message extends AbstractDb
 {
@@ -21,20 +21,19 @@ class Message extends AbstractDb
     }
 
     /**
-     * Bulk-update status for the given message IDs in a single query.
-     *
      * @throws LocalizedException
      */
-    public function updateStatusBulk(array $messageIds, int $status): int
+    public function getLastMessageId(int $conversationId, int $userId): ?int
     {
-        if (!$messageIds) {
-            return 0;
-        }
+        $connection = $this->getConnection();
+        $select = $connection->select()
+            ->from(
+                $this->getMainTable(),
+                [new Expression('MAX(id)')]
+            )
+            ->where('conversation_id = ?', $conversationId)
+            ->where('sender_id != ?', $userId);
 
-        return (int)$this->getConnection()->update(
-            $this->getMainTable(),
-            ['status' => $status],
-            ['id IN (?)' => $messageIds]
-        );
+        return (int)$connection->fetchOne($select) ?: null;
     }
 }

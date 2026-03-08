@@ -1,80 +1,297 @@
 //
-//  LiveChat Admin Styles
+//  LiveChat Admin Widget Styles
+//
+//  All colors use Magento admin LESS variables.
+//  Layout/sizing matches the frontend Tailwind widget exactly.
 //
 
 & when (@media-common = true) {
 
     //
-    //  Conversation View
+    //  Toggle Button
     //  _____________________________________________
 
-    .livechat-admin-view {
+    .livechat-widget-trigger {
+        .action-primary();
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        z-index: 10;
+        padding: 12px;
+        border-radius: 8px;
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1),
+        0 4px 6px -4px rgba(0, 0, 0, 0.1);
+    }
+
+    .livechat-widget-unread {
+        position: absolute;
+        top: 0;
+        right: 0;
+        transform: translate(50%, -50%);
+        width: 27px;
+        height: 26px;
+        border-radius: 100%;
+        background: @error__color;
+        color: @color-white;
+        font-size: @font-size__s;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    //
+    //  Widget Wrapper (dialog container)
+    //  _____________________________________________
+
+    .livechat-widget-wrapper {
+        position: fixed;
+        bottom: 96px;
+        right: 20px;
+        width: 100%;
+        max-width: 384px;
+        height: 100%;
+        max-height: 524px;
+        z-index: 9998;
+    }
+
+    .livechat-widget-dialog {
         display: flex;
         flex-direction: column;
-        height: calc(100vh - 200px);
-        min-height: 300px;
-        max-width: 1024px;
-        max-height: 600px;
-        margin-left: auto;
-        margin-right: auto;
+        height: 100%;
+        flex-grow: 1;
+        background: @color-white;
+        border-radius: 8px;
+        border: 2px solid fade(@color-primary, 30%);
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
+        overflow: hidden;
+    }
 
-        .admin-livechat-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 10px 15px;
-            background: #f8f8f8;
-            border: 1px solid #ccc;
-            border-bottom: none;
-            flex-shrink: 0;
+    //
+    //  Header
+    //  _____________________________________________
+
+    .livechat-widget-header {
+        width: 100%;
+        padding: @indent__s;
+        font-size: @font-size__l;
+        font-weight: 700;
+        color: @color-black;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        background: fade(@color-primary, 30%);
+        border-top-left-radius: 6px;
+        border-top-right-radius: 6px;
+        flex-shrink: 0;
+
+        h2 {
+            width: 100%;
+            overflow: hidden;
+            white-space: nowrap;
+            text-overflow: ellipsis;
+            font-size: inherit;
+            font-weight: inherit;
+            line-height: inherit;
+            margin: 0;
         }
     }
 
     //
-    //  Messages Container
+    //  Body
     //  _____________________________________________
 
-    .livechat-messages {
+    .livechat-widget-body {
         flex: 1;
         min-height: 0;
-        overflow-y: auto;
-        border: 1px solid #ccc;
-        padding: 15px;
-        background: #fff;
-    }
-
-    .livechat-placeholder {
-        text-align: center;
-        padding: 20px;
-        color: #999;
+        background: @color-white;
+        width: 100%;
+        border-bottom-left-radius: @indent__s;
+        border-bottom-right-radius: @indent__s;
     }
 
     //
-    //  Date Separator
+    //  Footer
     //  _____________________________________________
 
-    .livechat-date-separator {
-        text-align: center;
-        margin: 16px 0;
-        position: relative;
+    .livechat-widget-footer {
+        padding: 16px;
+        background: @color-gray94;
+        border-bottom-left-radius: @indent__s;
+        border-bottom-right-radius: @indent__s;
+        flex-shrink: 0;
+    }
 
-        &__label {
-            position: relative;
-            z-index: 1;
-            background: #fff;
-            padding: 0 8px;
-            color: #999;
-            font-size: 12px;
-            font-weight: 500;
+    //
+    //  Welcome State
+    //  _____________________________________________
+
+    .livechat-widget-welcome {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        height: 100%;
+        padding: @indent__m;
+        text-align: center;
+        border-radius: @indent__xs;
+
+        h2 {
+            font-size: @h2__font-size;
+            font-weight: 700;
+            margin-bottom: 4px;
         }
 
-        &__line {
-            position: absolute;
-            top: 50%;
-            left: 0;
-            right: 0;
-            height: 1px;
-            background: #ddd;
+        p {
+            font-size: 14px;
+            color: @color-gray60;
+            max-width: 320px;
+            margin-top: 4px;
+            margin-bottom: 20px;
+        }
+
+        button {
+            margin-top: 20px;
+        }
+    }
+
+    //
+    //  Main (Conversation List)
+    //  _____________________________________________
+
+    .livechat-widget-main {
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+
+        .livechat-widget-header {
+            justify-content: center;
+            text-align: center;
+        }
+
+        .livechat-widget-body {
+            overflow-y: auto;
+        }
+    }
+
+    .livechat-widget-conversation-list {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+    }
+
+    //
+    //  Conversation Preview Item
+    //  _____________________________________________
+
+    .livechat-widget-conversation-item {
+        border-bottom: 1px solid @color-gray90;
+    }
+
+    .livechat-widget-conversation-btn {
+        display: block;
+        width: 100%;
+        padding: 14px @indent__s;
+        background: none;
+        border: none;
+        text-align: left;
+        cursor: pointer;
+        transition: background 0.15s;
+        border-radius: 0;
+        line-height: 24px;
+        font-weight: @font-weight__regular;
+
+        &:hover {
+            background: @color-gray94;
+        }
+    }
+
+    .livechat-widget-conversation-title {
+        display: flex;
+        justify-content: space-between;
+        gap: @indent__xs;
+
+        .__title {
+            font-weight: 500;
+            font-size: 16px;
+            width: 100%;
+            overflow: hidden;
+            white-space: nowrap;
+            text-overflow: ellipsis;
+        }
+
+        .__date {
+            color: @color-gray60;
+            font-size: 14px;
+            white-space: nowrap;
+        }
+    }
+
+    .livechat-widget-conversation-preview {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 4px;
+        margin-top: 2px;
+
+        .__message {
+            font-size: 14px;
+            width: 100%;
+            overflow: hidden;
+            white-space: nowrap;
+            text-overflow: ellipsis;
+        }
+    }
+
+    .livechat-widget-unread-badge {
+        width: 21px;
+        height: 20px;
+        border-radius: 9999px;
+        background: @error__color;
+        color: @color-white;
+        font-size: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+    }
+
+    //
+    //  Conversation Thread
+    //  _____________________________________________
+
+    .livechat-widget-conversation {
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+    }
+
+    .livechat-widget-back {
+        font-size: @font-size__xl;
+        cursor: pointer;
+    }
+
+    .livechat-widget-messages {
+        overflow-y: auto;
+        padding: 14px 10px;
+        display: flex;
+        flex-direction: column-reverse;
+        height: 100%;
+        overflow-anchor: none;
+    }
+
+    .livechat-messages-list {
+        margin-bottom: 0;
+    }
+
+    .livechat-widget-load-more {
+        display: block;
+        margin: 0 auto;
+
+        &.__conversation {
+            margin: @indent__s auto;
         }
     }
 
@@ -82,49 +299,93 @@
     //  Message Bubble
     //  _____________________________________________
 
-    .livechat-message-row {
-        display: flex;
-        margin-bottom: 2px;
-    }
+    .livechat-widget-wrapper {
+        .livechat-message-row {
+            display: flex;
 
-    .livechat-bubble {
-        max-width: 70%;
-        padding: 8px 12px;
-        border-radius: 8px;
-        word-wrap: break-word;
+            &._admin {
+                justify-content: flex-end;
+            }
 
-        &._customer {
-            background: #f5f5f5;
+            &._customer {
+                justify-content: flex-start;
+            }
+
+            + .livechat-message-row {
+                margin-top: 2px;
+            }
         }
 
-        &._admin {
-            background: #e3f2fd;
-        }
-    }
+        .livechat-bubble {
+            max-width: calc(100% - 1rem);
+            padding: 8px;
+            border-radius: 8px;
+            word-wrap: break-word;
+            font-size: 14px;
+            background: @color-gray90;
 
-    .livechat-message-meta {
-        display: flex;
-        align-items: center;
-        justify-content: flex-end;
-        gap: 4px;
-        margin-top: 2px;
-    }
+            &._customer {
+                background: @color-gray90;
+            }
 
-    .livechat-message-time {
-        font-size: 10px;
-        color: #999;
-    }
-
-    .livechat-tick {
-        font-size: 11px;
-
-        &._sent {
-            color: #999;
+            &._admin {
+                background-color: @button-primary__background-color;
+                color: @button-primary__color;
+            }
         }
 
-        &._read {
-            color: #4caf50;
-            letter-spacing: -4px;
+        .livechat-message-status {
+            display: flex;
+            position: relative;
+
+            .__read {
+                position: absolute;
+                left: 5px;
+            }
+        }
+
+        .livechat-message-meta {
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            gap: 2px;
+            font-size: 12px;
+        }
+
+        .livechat-message-time {
+            font-size: 12px;
+            color: inherit;
+            opacity: 0.7;
+        }
+
+        //
+        //  Date Separator
+        //  _____________________________________________
+
+        .livechat-date-separator {
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            position: relative;
+            margin: 12px auto;
+
+            &__label {
+                position: relative;
+                z-index: 1;
+                background: @color-white;
+                padding: 0 4px;
+                color: @color-gray60;
+                font-weight: 500;
+            }
+
+            &__line {
+                position: absolute;
+                top: 50%;
+                left: 0;
+                right: 0;
+                height: 1px;
+                background: @color-gray60;
+            }
         }
     }
 
@@ -132,21 +393,23 @@
     //  Reply Area
     //  _____________________________________________
 
-    .livechat-reply {
-        border: 1px solid #ccc;
-        border-top: none;
-        padding: 10px;
-        background: #f8f8f8;
+    .livechat-widget-reply {
+        padding: 16px;
+        background: @color-gray94;
         display: flex;
-        gap: 10px;
+        gap: 8px;
         flex-shrink: 0;
+        border-bottom-left-radius: 8px;
+        border-bottom-right-radius: 8px;
+    }
 
-        &__input {
-            flex: 1;
-            resize: none;
-            padding: 8px;
-            border: 1px solid #ccc;
-            border-radius: 4px;
-        }
+    //
+    //  Shared
+    //  _____________________________________________
+
+    .livechat-widget-wrapper .livechat-placeholder {
+        text-align: center;
+        padding: 20px;
+        color: @color-gray60;
     }
 }

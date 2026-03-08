@@ -37,9 +37,7 @@ $heroicons = $viewModels->require(HeroiconsOutline::class);
                     <?= /** @noEscape */ $block->getChildHtml('message') ?>
                 </template>
             </ul>
-            <div x-show="hasMoreMessages" x-intersect.loading="loadMoreMessages">
-                <?= $heroicons->refreshHtml('animate-spin size-5') ?>
-            </div>
+            <div x-intersect.loading="loadMoreMessages"></div>
         </div>
         <div class="livechat-footer p-4 bg-gray-100" :aria-busy="isLoading">
             <form

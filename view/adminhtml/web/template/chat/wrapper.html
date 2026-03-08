@@ -1,0 +1,17 @@
+<!-- ko if: open -->
+    <div class="livechat-widget-wrapper">
+        <div class="livechat-widget-dialog">
+            <!-- ko if: layout === 'welcome' -->
+                <!-- ko template: 'MaxStan_LiveChat/chat/layout/welcome' --><!-- /ko -->
+            <!-- /ko -->
+
+            <!-- ko if: layout === 'main' -->
+                <!-- ko template: 'MaxStan_LiveChat/chat/layout/main' --><!-- /ko -->
+            <!-- /ko -->
+
+            <!-- ko if: layout === 'conversation' -->
+                <!-- ko template: 'MaxStan_LiveChat/chat/layout/conversation' --><!-- /ko -->
+            <!-- /ko -->
+        </div>
+    </div>
+<!-- /ko -->

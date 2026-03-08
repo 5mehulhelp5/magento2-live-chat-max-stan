@@ -31,8 +31,6 @@ $customerViewModel = $viewModels->require(Customer::class);
             currentPage: 1,
             hasMoreMessages: false,
             isLoadingMore: false,
-            pendingReadIds: new Set(),
-            readDebounceTimer: null,
             conversationTitleDateFormatter: null,
             messageDateFormatter: null,
             lastMessageDateFormatter: null,
@@ -49,10 +47,6 @@ $customerViewModel = $viewModels->require(Customer::class);
                 { emoji: '🛍️', text: '<?= $escaper->escapeJs(__('One chat away from the perfect pick')) ?>' },
                 { emoji: '⚡', text: '<?= $escaper->escapeJs(__('Let us save you time. Start a chat!')) ?>' },
             ],
-
-            init() {
-                this.initConversations();
-            },
 
             async initConversations() {
                 const response = await fetch(`${BASE_URL}rest/${CURRENT_STORE_CODE}/V1/conversations/mine`, {
@@ -78,47 +72,7 @@ $customerViewModel = $viewModels->require(Customer::class);
                 this.currentPage = 1;
                 this.layout = 'conversation';
                 this.hasMoreMessages = this.currentConversation.messages.length >= <?= $escaper->escapeJs(MessagesManagerInterface::MESSAGES_LIMIT) ?>;
-                this.resetReadState();
-            },
-
-            addPendingReadIds(message) {
-                if (
-                    +message.sender_type !== <?= $escaper->escapeJs(UserContextInterface::USER_TYPE_ADMIN) ?>
-                    || +message.status === 1
-                ) {
-                    return;
-                }
-
-                message.status = 1;
-                if (this.readDebounceTimer) {
-                    clearTimeout(this.readDebounceTimer)
-                }
-
-                this.pendingReadIds.add(message.id);
-                this.readDebounceTimer = setTimeout(() => this.markAsRead(), 300);
-            },
-
-            async markAsRead() {
-                const messageIds = [...this.pendingReadIds];
-                this.resetReadState();
-
-                await fetch(
-                    `${BASE_URL}rest/${CURRENT_STORE_CODE}/V1/conversation/${this.currentConversation.id}/read`,
-                    {
-                        method: 'PUT',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'X-Requested-With': 'XMLHttpRequest'
-                        },
-                        body: JSON.stringify({ conversationId: this.currentConversation.id, messageIds })
-                    }
-                );
-            },
-
-            resetReadState() {
-                this.pendingReadIds.clear();
-                clearTimeout(this.readDebounceTimer);
-                this.readDebounceTimer = null;
+                this.markAsRead();
             },
 
             async loadMoreMessages() {
@@ -152,12 +106,13 @@ $customerViewModel = $viewModels->require(Customer::class);
 
                 const messages = await response.json();
                 this.currentPage = nextPage;
-                if (messages.length) {
-                    this.hasMoreMessages = messages.length >= <?= $escaper->escapeJs(MessagesManagerInterface::MESSAGES_LIMIT) ?>;
-                    this.currentConversation.messages.unshift(...messages);
+                this.hasMoreMessages = messages?.length >= <?= $escaper->escapeJs(MessagesManagerInterface::MESSAGES_LIMIT) ?>;
+                this.isLoadingMore = false;
+                if (!messages.length) {
+                    return;
                 }
 
-                this.isLoadingMore = false;
+                this.currentConversation.messages.unshift(...messages);
             },
 
             async sendMessage() {
@@ -216,22 +171,41 @@ $customerViewModel = $viewModels->require(Customer::class);
                 }
             },
 
+            async markAsRead() {
+                const { id } = this.currentConversation;
+                const result = await fetch(
+                    `${BASE_URL}rest/${CURRENT_STORE_CODE}/V1/conversation/${id}/read`,
+                    {
+                        method: 'PUT',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-Requested-With': 'XMLHttpRequest'
+                        }
+                    },
+                );
+
+                if (!result.ok) {
+                    return console.log('Something went wrong during mark as read');
+                }
+            },
+
             sortConversations() {
                 this.conversations.sort((a, b) => {
-                    const dateA = a.messages[0]?.created_at ?? a.created_at;
-                    const dateB = b.messages[0]?.created_at ?? b.created_at;
+                    const firstDate = b.messages.at(-1)?.created_at || b.created_at;
+                    const secondDate = a.messages.at(-1)?.created_at || a.created_at;
 
-                    return dateB.localeCompare(dateA);
+                    return new Date(firstDate).getTime() - new Date(secondDate).getTime();
                 });
             },
 
             showDateSeparator(index) {
-                const current = new Date(this.currentConversation.messages[index].created_at + ' UTC').toDateString();
+                const { messages } = this.currentConversation;
+                const current = new Date(messages[index].created_at + ' UTC').toDateString();
                 if (index === 0) {
                     return true;
                 }
 
-                const previous = new Date(this.currentConversation.messages[index - 1].created_at + ' UTC').toDateString();
+                const previous = new Date(messages[index - 1].created_at + ' UTC').toDateString();
 
                 return current !== previous;
             },
@@ -315,14 +289,30 @@ $customerViewModel = $viewModels->require(Customer::class);
             },
 
             getTotalUnread() {
-                return this.conversations?.reduce((acc, conversation) => acc + conversation.total_unread, 0);
+                const sender = <?= $escaper->escapeJs(UserContextInterface::USER_TYPE_CUSTOMER) ?>;
+
+                const result = this.conversations?.reduce(
+                    (acc, conversation) => acc + conversation.messages.filter(
+                        item => item.id > conversation.last_user_read_message_id && item.sender_type !== sender
+                    ).length,
+                    0
+                );
+
+                return result;
+            },
+
+            getConversationUnread(conversation) {
+                const sender = <?= $escaper->escapeJs(UserContextInterface::USER_TYPE_CUSTOMER) ?>;
+
+                return conversation.messages.filter(
+                    item => item.id > conversation.last_user_read_message_id && item.sender_type !== sender
+                ).length;
             },
 
             notify(conversation, message) {
                 if (
                     Notification?.permission !== 'granted'
-                    || message.sender_type !== <?= /** @noEscape */ UserContextInterface::USER_TYPE_CUSTOMER ?>
-                    || !document.hidden
+                    || message.sender_type === <?= /** @noEscape */ UserContextInterface::USER_TYPE_CUSTOMER ?>
                 ) {
                     return;
                 }
@@ -340,6 +330,9 @@ $customerViewModel = $viewModels->require(Customer::class);
                 ['@private-content-loaded.window'](event) {
                     const { customer = {} } = event.detail.data;
                     this.customer = customer;
+                    if (customer.uid) {
+                        this.initConversations();
+                    }
 
                     window.mercureWorkerPort.postMessage({
                         type: 'subscribe',
@@ -360,34 +353,37 @@ $customerViewModel = $viewModels->require(Customer::class);
                         conversation.total_unread = (conversation.total_unread || 0) + 1;
                     }
 
-                    // this.notify(conversation, message);
+                    this.notify(conversation, message);
                     conversation.messages.push(message);
+                    if (
+                        +this.currentConversation?.id === +conversation.id
+                        && message.sender_type !== <?= $escaper->escapeJs(UserContextInterface::USER_TYPE_CUSTOMER) ?>
+                    ) {
+                        this.markAsRead();
+                    }
+
                     this.sortConversations();
                 },
 
-                ['@mercure:message:read.window'](event) {
-                    const { conversation_id: conversationId, message_ids: messageIds } = event.detail;
-                    const conversation = this.conversations.find(({ id }) => id === conversationId);
+                ['@mercure:conversation:read.window'](event) {
+                    const {
+                        last_admin_read_message_id,
+                        last_user_read_message_id,
+                        conversation_id: conversationId
+                    } = event.detail;
 
+                    const conversation = this.conversations.find(({ id }) => id === conversationId);
                     if (!conversation) {
                         return;
                     }
 
-                    conversation.messages.forEach(msg => {
-                        if (!messageIds.includes(+msg.id)) {
-                            return;
-                        }
-
-                        msg.status = 1;
-                        if (msg.sender_type !== <?= $escaper->escapeJs(UserContextInterface::USER_TYPE_CUSTOMER) ?>) {
-                            conversation.total_unread = (conversation.total_unread || 1)  - 1;
-                        }
-                    });
+                    conversation.last_user_read_message_id = last_user_read_message_id;
+                    conversation.last_admin_read_message_id = last_admin_read_message_id;
                 },
 
                 ['@mercure:conversation:create.window'](event) {
                     const { id: conversationId } = event.detail,
-                        conversation = this.conversations.find(({ id }) => id === +conversationId);
+                        conversation = this.conversations.find(({ id }) => +id === +conversationId);
 
                     if (conversation) {
                         return;
@@ -398,8 +394,8 @@ $customerViewModel = $viewModels->require(Customer::class);
                     this.conversations.push(event.detail);
                     this.sortConversations();
 
-                    if (this.pendingConversationId === event.detail.id) {
-                        this.openConversation(event.detail.id);
+                    if (+this.pendingConversationId === +event.detail.id) {
+                        this.openConversation(+event.detail.id);
                         this.pendingConversationId = null;
                     }
                 }

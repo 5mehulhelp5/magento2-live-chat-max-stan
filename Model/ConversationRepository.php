@@ -68,8 +68,15 @@ readonly class ConversationRepository implements ConversationRepositoryInterface
     {
         $collection = $this->collectionFactory->create();
         $this->collectionProcessor->process($searchCriteria, $collection);
-
+        $lastPage = (int)$collection->getLastPageNumber();
         $searchResults = $this->searchResultsFactory->create();
+        $searchResults->setSearchCriteria($searchCriteria)
+            ->setItems([])
+            ->setTotalCount(0);
+        if ($searchCriteria->getCurrentPage() > $lastPage) {
+            return $searchResults;
+        }
+
         $searchResults->setSearchCriteria($searchCriteria);
         $searchResults->setItems($collection->getItems());
         $searchResults->setTotalCount($collection->getSize());

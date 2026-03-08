@@ -6,24 +6,19 @@ namespace MaxStan\LiveChat\Controller\Adminhtml\Conversation;
 
 use Magento\Backend\App\Action;
 use Magento\Backend\App\Action\Context;
-use Magento\Framework\App\Action\HttpGetActionInterface;
+use Magento\Framework\App\Action\HttpPostActionInterface;
 use Magento\Framework\Controller\Result\Json;
 use Magento\Framework\Controller\ResultFactory;
 use Magento\Framework\Exception\LocalizedException;
-use MaxStan\LiveChat\Api\MessagesManagerInterface;
+use MaxStan\LiveChat\Api\ConversationsManagerInterface;
 
-/**
- * Admin controller to get messages for a conversation.
- *
- * Mirrors: GET /V1/conversation/:conversationId/messages/:currentPage
- */
-class Messages extends Action implements HttpGetActionInterface
+class MarkAsRead extends Action implements HttpPostActionInterface
 {
     public const string ADMIN_RESOURCE = 'MaxStan_LiveChat::livechat';
 
     public function __construct(
         Context $context,
-        private readonly MessagesManagerInterface $messagesManager
+        private readonly ConversationsManagerInterface $conversationsManager,
     ) {
         parent::__construct($context);
     }
@@ -31,18 +26,12 @@ class Messages extends Action implements HttpGetActionInterface
     public function execute(): Json
     {
         $conversationId = (int)$this->getRequest()->getParam('id');
-        $currentPage = (int)($this->getRequest()->getParam('page', 1));
-
         /** @var Json $jsonResult */
         $jsonResult = $this->resultFactory->create(ResultFactory::TYPE_JSON);
 
         try {
-            $messages = $this->messagesManager->get($conversationId, $currentPage);
-            $data = [];
-            foreach ($messages as $message) {
-                $data[] = $message->getData();
-            }
-            $jsonResult->setData($data);
+            $this->conversationsManager->markAsRead($conversationId);
+            $jsonResult->setData(['success' => true]);
         } catch (LocalizedException $e) {
             $jsonResult->setHttpResponseCode(400);
             $jsonResult->setData(['error' => $e->getMessage()]);

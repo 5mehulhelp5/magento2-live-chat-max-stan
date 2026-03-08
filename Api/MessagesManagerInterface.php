@@ -31,16 +31,4 @@ interface MessagesManagerInterface
      * @throws AuthorizationException
      */
     public function get(int $conversationId, int $currentPage = 1): array;
-
-    /**
-     * Mark unread messages from the other party as read.
-     *
-     *
-     * @param int $conversationId
-     * @param int[] $messageIds
-     * @return bool
-     *
-     * @throws LocalizedException
-     */
-    public function markAsRead(int $conversationId, array $messageIds = []): bool;
 }
