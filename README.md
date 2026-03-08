@@ -11,6 +11,9 @@ MaxStan_LiveChat adds a full-featured live chat widget to the Magento storefront
 to the admin panel. Customers can open conversations, send messages, and receive real-time replies from store
 administrators — all without page reloads, using server-sent events via Mercure.
 
+> [!WARNING]
+> This package is currently in **alpha** (`0.1.0-alpha1`). The API is unstable and may introduce breaking changes between releases. Do not use in production.
+
 ## ⭐ Features
 
 - Real-time messaging between customers and admins via Mercure SSE
